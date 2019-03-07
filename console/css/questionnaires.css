@@ -1,0 +1,55 @@
+#tbl_add_question tr td:first-child {
+    font-weight: normal !important;
+}
+
+#tbl_add_question tr td label{
+	font-weight: normal;
+}
+
+#question_options table tr td:first-child {
+    font-weight: normal !important;
+    color: #000000;
+}
+
+#question_options table tr td label{
+	font-weight: normal;
+}
+
+.row_question_sections{
+	background-color: #E6E6E6 !important;
+}
+
+.hide-rows{
+	display: none;
+}
+
+/* For answer questionnaires */
+table.tbl-answer-questionnaire > tr:first-child > td:first-child{
+	width: 100px;
+}
+
+.table-active{
+	background-color: #D8D8D8 !important;
+}
+
+
+/* classes for row colors */
+.bg-row-bad{
+	background-color: #FE2E2E;
+	color: #FFFFFF;
+}
+
+.bg-row-improvement{
+	background-color: #F6EC67;
+	color: #000000;
+}
+
+.bg-row-satisfactory{
+	background-color: #22B718;
+	color: #FFFFFF;
+}
+
+.bg-row-excellent{
+	background-color: #3D46F7;
+	color: #FFFFFF;
+}

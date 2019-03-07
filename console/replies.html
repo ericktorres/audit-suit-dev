@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+    	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    	<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Audit Suit - Reply</title>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/app.css" rel="stylesheet">
+        <link href="css/reply.css" rel="stylesheet">
+	</head>
+	<body>
+		<nav class="navbar navbar-inverse navbar-fixed-top">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+			            <span class="sr-only">Toggle navigation</span>
+			            <span class="icon-bar"></span>
+			            <span class="icon-bar"></span>
+			            <span class="icon-bar"></span>			            
+          			</button>
+					<a id="logo_container" class="navbar-brand" href="#"></a>
+				</div>
+				<div id="navbar" class="collapse navbar-collapse">
+          			<ul class="nav navbar-nav" id="ul_menu"></ul>
+            		<ul class="nav navbar-nav navbar-right">
+            			<li class="dropdown">
+              				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span id="lbl_user_name"></span> <span class="caret"></span></a>
+              				<ul class="dropdown-menu">
+                                <li><a href="change-password.html">Cambiar contraseña</a></li>
+                				<li><a href="javascript:logout();">Cerrar sesión</a></li>
+                			</ul>
+            			</li>
+            		</ul>
+          			
+        		</div><!--/.nav-collapse -->
+			</div>
+		</nav>
+
+		<div class="container fifty-top">
+			<div class="page-header">
+                <button type="button" class="btn btn-default" onclick="backToReply();"><span class="glyphicon glyphicon-chevron-left"></span> Regresar</button>
+  				<button type="button" class="btn btn-primary" aria-label="Left Align" onclick="openCreateReply();"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Nueva Réplica</button>
+  				<button type="button" class="btn btn-secondary" aria-label="Left Align" onclick="javascript:location.reload();"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Actualizar</button>
+			</div>
+
+			<div class="page-header">
+            	<h1><small>Reporte de réplicas</small></h1>
+        	</div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Reporte No: <span id="sp_report_number"></span></h3>
+                </div>
+
+                <div class="panel-body">
+                    <table width="100%">
+                        <tr>
+                            <td><b>CLIENTE:</b></td>
+                            <td><span id="sp_client"></span></td>
+                            <td><b>SUCURSAL:</b></td>
+                            <td><span id="sp_branch"></span></td>
+                        </tr>
+                        <tr>
+                            <td><b>CUESTIONARIO:</b></td>
+                            <td><span id="sp_questionnaire"></span></td>
+                            <td><b>CÓDIGO:</b></td>
+                            <td><span id="sp_questionnaire_code"></span></td>
+                        </tr>
+                        <tr>
+                            <td><b>AUDITOR:</b></td>
+                            <td><span id="sp_auditor"></span></td>
+                            <td><b>FECHA AUDITORÍA:</b></td>
+                            <td id="td-audit-date"><span id="sp_audit_date"></span></td>
+                        </tr>
+                        <tr>
+                            <td><b>TOTAL DE NO CONFORMIDADES:</b></td>
+                            <td><span id="sp_total_nonconformities"></span></td>              
+                            <td><b>RÉPLICAS INGRESADAS:</b></td>
+                            <td><span id="sp_total_replies"></span></td>              
+                        </tr>
+                        <tr>
+                            <td><b>% DE RÉPLICAS AÑADIDAS:</b></td>
+                            <td><span id="sp_percentage_replies_added"></span></td>              
+                            <td><b>% DE CUMPLIMIENTO SATISFACTORIO:</b></td>
+                            <td><span id="sp_percentage_of_success"></span></td>
+                        </tr>
+                        <tr>
+                            <td><b>FECHA DE VENCIMIENTO:</b></td>
+                            <td><span id="sp_due_date"></span></td>              
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page-header">
+                <h1><small>Réplicas en proceso</small></h1>
+                <div id="filters">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <input id="txt_filter_all" type="text" class="form-control" placeholder="Ingrese término de búsqueda">
+                        </div>
+                        <div class="col-lg-4">
+                            <select id="slc_filter_status" class="form-control">
+                                <option>Filtrar por estado</option>
+                                <option value="Cerrada">Cerrada</option>
+                                <option value="Abierta">Abierta</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-4">
+                            <button type="button" class="btn btn-default" aria-label="Left Align" onclick="javascript:location.reload();"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Restablecer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tbody_reply"></div>
+
+			<!--<div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>No</th>
+                            <th>PREGUNTA</th>
+                            <th>NO CONFORMIDAD</th>
+                            <th>CAUSA RAÍZ</th>
+                            <th>ACCIÓN CORRECTIVA</th>
+                            <th>RESPONSABLE</th>
+                            <th>EVIDENCIA</th>
+                            <th>FECHA COMPROMISO</th>
+                            <th>ESTADO</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody_reply">
+                    </tbody>
+                </table>
+			</div>-->
+		</div>
+
+		<!-- Modal add new reply -->
+        <div class="modal fade" id="add-new-reply" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="exampleModalLabel">Nueva Réplica</h3>
+                    </div>
+                    <div class="modal-body">
+                        
+                        <div id="alert-clients-auditors" class="alert alert-success alert-dismissible alert-hide" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            
+                        </div>
+                        <form enctype="multipart/form-data">
+                        <table class="form-tbl">
+                            <tr>
+                                <td>SELECCIONE PLANTA</td>
+                                <td><select id="slc_plant" class="form-control"></select></td>
+                            </tr>
+                            <tr>
+                                <td>SELECCIONE REPORTE</td>
+                                <td><select id="slc_report" class="form-control"></select></td><!-- onchange="getQuestions();" -->
+                            </tr>
+                            <tr>
+                            	<td>SELECCIONE PREGUNTA</td>
+                            	<td><select id="slc_question" class="form-control"></select></td>
+                            </tr>
+                            <tr>
+                                <td>CAUSA RAÍZ</td>
+                                <td><textarea id="txa_root_cause" class="form-control"></textarea></td>
+                            </tr>
+                            <tr>
+                            	<td>ACCIÓN CORRECTIVA</td>
+                            	<td><textarea id="txa_corrective_action" class="form-control"></textarea></td>
+                            </tr>
+                            <tr>
+                            	<td>RESPONSABLES</td>
+                            	<td><textarea id="txa_responsibles" class="form-control"></textarea></td>
+                            </tr>
+                            <tr>
+                            	<td>FECHA COMPROMISO</td>
+                            	<td><input type="date" id="dte_commitment_date" class="form-control"></td>
+                            </tr>
+                            <tr>
+                            	<td>EVIDENCIA</td>
+                            	<td><input type="file" name="file" id="fle_evidence" class="form-control" onchange="uploadEvidence();"></td>
+                            </tr>
+                        </table>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                    	<button type="button" class="btn btn-primary" onclick="createReply();"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Crear Réplica</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span> Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal edit a reply -->
+        <div class="modal fade" id="edit-a-reply" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="exampleModalLabel">Modificar Réplica</h3>
+                    </div>
+                    <div class="modal-body">
+                        
+                        <div id="alert-edit-reply" class="alert alert-success alert-dismissible alert-hide" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            
+                        </div>
+
+                        <form enctype="multipart/form-data">
+                            <table class="form-tbl">
+                                <tr>
+                                    <td>SELECCIONE PREGUNTA</td>
+                                    <td><select id="slc_question_edit" class="form-control" disabled></select></td>
+                                </tr>
+                                <tr>
+                                    <td>CAUSA RAÍZ</td>
+                                    <td><textarea id="txa_root_cause_edit" class="form-control"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <td>ACCIÓN CORRECTIVA</td>
+                                    <td><textarea id="txa_corrective_action_edit" class="form-control"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <td>RESPONSABLES</td>
+                                    <td><textarea id="txa_responsibles_edit" class="form-control"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <td>FECHA COMPROMISO</td>
+                                    <td><input type="date" id="dte_commitment_date_edit" class="form-control"></td>
+                                </tr>
+                                <tr>
+                                    <td>EVIDENCIA</td>
+                                    <td>
+                                        <input type="file" name="file" id="fle_evidence_edit" class="form-control" onchange="uploadEvidence();">
+                                        <input type="hidden" id="hdn_file_name">
+                                        <input type="hidden" id="hdn_reply_id">
+                                    </td>
+                                </tr>
+                            </table>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="editReply();"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Modificar Réplica</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span> Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal add a comment to reply -->
+        <div class="modal fade" id="add-a-comment" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="exampleModalLabel">Añadir Comentario</h3>
+                    </div>
+                    <div class="modal-body">
+                        
+                        <div id="alert-add-comment" class="alert alert-success alert-dismissible alert-hide" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            
+                        </div>
+                        
+                        <table class="form-tbl">
+                            <tr>
+                                <td>USUARIO</td>
+                                <td>
+                                    <input type="hidden" id="hdn_reply_id_cm">
+                                    <input type="hidden" id="hdn_question_id_cm">
+                                    <input type="hidden" id="hdn_reply_report_id">
+                                    <input type="text" id="txt_user_comment" class="form-control">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>COMENTARIO</td>
+                                <td><textarea id="txa_comment" class="form-control"></textarea></td>
+                            </tr>
+                            <tr>
+                                <td>EVIDENCIA</td>
+                                <td><input type="file" name="file" id="fle_evidence_comment" class="form-control" onchange="uploadEvidenceComment();"></td>
+                            </tr>
+                        </table>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="addComment();"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Añadir Comentario</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span> Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal validate (close) reply -->
+        <div class="modal fade" id="validate-reply" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="exampleModalLabel">Validar Réplica</h3>
+                    </div>
+                    <div class="modal-body">
+                        
+                        <div id="alert-close-reply" class="alert alert-success alert-dismissible alert-hide" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                        
+                        <table class="form-tbl">
+                            <tr>
+                                <td>ACCIÓN</td>
+                                <td>
+                                    <input type="hidden" id="hdn_reply_id_validate">
+                                    <input type="hidden" id="hdn_question_id_validate">
+                                    <select id="slc_action" class="form-control">
+                                        <option value="1">Cerrar réplica</option>
+                                        <option value="0">Abrir réplica</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>RESULTADO DE CIERRE</td>
+                                <td>
+                                    <select id="slc_reply_close_result" class="form-control">
+                                        <option value="1">Satisfactorio</option>
+                                        <option value="0">No satisfactorio</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>COMENTARIO</td>
+                                <td><textarea id="txa_close_comment" class="form-control"></textarea></td>
+                            </tr>
+                        </table>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="validateReply();"><span class="glyphicon glyphicon-check" aria-hidden="true"></span> Guardar cambios</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span> Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+		<script src="js/jquery-1.12.4.min.js"></script>
+    	<script src="js/bootstrap.min.js"></script>
+    	<script src="js/reply.js"></script>
+    	<script src="js/app.js"></script>
+    	<script>
+			$(document).ready(function(){
+				setSessionData();
+
+                setMenu('', '', '', '', '', ' class="active"');
+
+                getPlants();
+
+                getReportGeneralData();
+
+                //getReports(); // Loading reports
+                getQuestions(); // Loading questions
+
+                getReply();
+
+                loadLogo();
+
+                // Filter all
+                $("#txt_filter_all").on("keyup", function() {
+                    var value = $(this).val().toLowerCase();
+                    $("#tbody_reply div[class='panel panel-default']").filter(function() {
+                        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                    });
+                });
+                // Filter by status
+                $("#slc_filter_status").on("change", function() {
+                    var value = $(this).val();
+                    $("#tbody_reply div[class='panel panel-default']").filter(function() {
+                        $(this).toggle($(this).text().indexOf(value) > -1)
+                    });
+                });
+			});
+		</script>
+	</body>
+</html>

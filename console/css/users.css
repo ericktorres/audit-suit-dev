@@ -1,0 +1,24 @@
+
+.row-client{
+	background-color: #848484 !important;
+}
+
+.row-plants-supplier{
+	background-color: #E6E6E6 !important;
+}
+
+.hide-rows{
+	display: none;
+}
+
+.show-rows{
+	display: inline;
+}
+
+.company-title{
+	color: #000000;
+}
+
+.company-title:hover{
+	color: #FFFFFF;
+}
