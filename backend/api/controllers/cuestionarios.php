@@ -192,7 +192,8 @@ $app->post('/v1/questionnaires/section/create', function(Request $request) use (
 
 
 // Get sections of a questionnaire
-$app->get('/v1/questionnaires/sections/get/{questionnaire_id}', function($questionnaire_id) use ($app){
+$app->get('/v1/questionnaires/sections/get/{questionnaire_id}/{answered_questionnaire_id}', function($questionnaire_id, $answered_questionnaire_id) use ($app){
+
 	$sql = $app['db']->createQueryBuilder();
 	$sql
 		->select('s.id_seccion AS id, s.num_seccion AS section_number, s.id_cuestionario AS questionnaire_id, s.nombre_seccion AS name, s.descripcion AS description, s.valor AS value, s.fecha_alta AS creation_date')
@@ -225,6 +226,23 @@ $app->get('/v1/questionnaires/sections/get/{questionnaire_id}', function($questi
 			
 
 			for($j=0; $j<count($questions); $j++){
+				// This query gets the results or selected values in the respuestas_cuestionarios table
+				$sql_get_result = $app['db']->createQueryBuilder();
+				$sql_get_result
+					->select('rc.id_respuesta AS answer_id, rc.id_pregunta AS question_id, rc.id_opcion AS selected_option, rc.puntaje AS score, rc.valor AS value, rc.observaciones_auditor AS observations, rc.no_conformidad AS nonconformity, rc.no_aplica AS not_apply, CONCAT(id_cuestionario,\'_\',id_seccion,\'_\',id_pregunta,\'_\',id_opcion,\'_\',valor) AS string_selected_value')
+					->from('respuestas_cuestionarios', 'rc')
+					->where('rc.id_pregunta = ?')
+					->andWhere('id_seccion = ?')
+					->andWhere('id_cuestionario = ?')
+					->andWhere('id_cuestionario_respondido = ?');
+				$stmt = $app['db']->prepare($sql_get_result);
+				$stmt->bindValue(1, $questions[$j]['question_id']);
+				$stmt->bindValue(2, $sections[$i]['id']);
+				$stmt->bindValue(3, $questionnaire_id);
+				$stmt->bindValue(4, $answered_questionnaire_id);
+				$stmt->execute();
+				$question_result = $stmt->fetch();
+
 				// Getting options for each question
 				$sql_options = $app['db']->createQueryBuilder();
 				$sql_options
@@ -245,6 +263,7 @@ $app->get('/v1/questionnaires/sections/get/{questionnaire_id}', function($questi
 				$question_options[$j]['upload_photo'] = $questions[$j]['upload_photo'];
 				$question_options[$j]['max_char'] = $questions[$j]['max_char'];
 				$question_options[$j]['type'] = $questions[$j]['type'];
+				$question_options[$j]['question_result'] = $question_result;
 				$question_options[$j]['options'] = $options;
 			}	
 		}/*else{

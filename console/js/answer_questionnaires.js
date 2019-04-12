@@ -14,7 +14,7 @@ var getQuestions = function(){
 	var idSeccionPreg = '';
 
 	$.ajax({
-		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/sections/get/'+questionnaire_id,
+		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/sections/get/'+questionnaire_id+'/1',
 		dataType: 'json',
 		success: function(response){
 			for(var i=0; i<response.length; i++){
@@ -47,11 +47,24 @@ var getQuestions = function(){
 						html += '<table class="tbl-answer-questionnaire">';
 
 						for(var k=0; k<question.options.length; k++){
+							var string_selected_value = questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value;
+							console.log(string_selected_value);
+
+							if(question.question_result.string_selected_value != false){
+								console.log(question.question_result.string_selected_value);
+
+								if(question.question_result.string_selected_value == string_selected_value){
+									var radio_status = ' checked';
+								}else{
+									var radio_status = '';
+								}	
+							}
+							
 							option = question.options[k];
 							
 							html += '<tr>';
 							html += '<td width="25">';
-							html += '<input type="radio" name="rdo_question_'+question.question_id+'" value="'+questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value+'">';
+							html += '<input type="radio" name="rdo_question_'+question.question_id+'" value="'+questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value+'"'+radio_status+'>';
 							html += '</td>';
 							html += '<td>'+option.question_option+'</td>';
 							html += '</tr>';							
@@ -65,6 +78,16 @@ var getQuestions = function(){
 						html += '<table class="tbl-answer-questionnaire">';
 
 						for(var k=0; k<question.options.length; k++){
+							var string_selected_value = questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value;
+
+							if(question.question_result.string_selected_value != false){
+								if(question.question_result.string_selected_value == string_selected_value){
+									var radio_status = ' checked';
+								}else{
+									var radio_status = '';
+								}	
+							}
+
 							option = question.options[k];
 							
 							html += '<tr>';
