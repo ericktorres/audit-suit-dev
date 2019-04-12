@@ -605,6 +605,30 @@ $app->get('/v1/questionnaires/auditors/get-questionnaires-and-clients/{auditor_i
 	return $app->json($questionnaires);
 });
 
+// This controller get just the companies that are assigned to the auditor
+// $app->get('/v1/questionnaires/auditors/get-questionnaires-and-clients-dev/{auditor_id}', function($auditor_id) use ($app){
+// 	$sql = $app['db']->createQueryBuilder();
+// 	$sql
+// 		->select('e.id_empresa AS company_id, e.nombre_comercial AS company_name, c.id_cuestionario AS questionnaire_id, c.codigo AS questionnaire_code, c.nombre AS questionnaire_name')
+// 		->from('r_auditores_empresas', 'rae')
+// 		->leftJoin('rae', 'empresas', 'e', 'e.id_empresa = rae.id_empresa')
+// 		->leftJoin('e', 'r_clientes_cuestionarios', 'rcc', 'rcc.id_cliente = e.id_empresa')
+// 		->leftJoin('rcc', 'cuestionarios', 'c', 'c.id_cuestionario = rcc.id_cuestionario')
+// 		->where('rae.id_auditor = ?');
+// 	$stmt = $app['db']->prepare($sql);
+// 	$stmt->bindValue(1, $auditor_id);
+// 	$stmt->execute();
+// 	$questionnaires = $stmt->fetchAll();
+
+// 	$sql = $app['db']->createQueryBuilder();
+// 	$sql->
+		
+
+
+// 	return $app->json($questionnaires);
+
+// });
+
 
 // Saving the questionnaire answers
 $app->post('/v1/questionnaire/save', function(Request $request) use ($app){
@@ -634,33 +658,12 @@ $app->post('/v1/questionnaire/save', function(Request $request) use ($app){
 	}
 
 	// Saving the main data of the questionnaire
-	$sql = "INSERT INTO cuestionarios_respondidos (
-				id_cuestionario,
-				id_cliente,
-				id_auditor,
-				hora_inicio,
-				fecha_de_inicio,
-				coordenadas_inicio,
-				hora_finalizacion,
-				fecha_finalizacion,
-				coordenadas_finalizacion,
-				fecha_alta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+	$sql = "delete from respuestas_cuestionarios where respuestas_cuestionarios.id_cuestionario_respondido = ". $answers[0]['questionnaire_respondido_id'] . " and respuestas_cuestionarios.id_seccion =" . $answers[0]['section_id'];
 	$stmt = $app['db']->prepare($sql);
-	$stmt->bindValue(1, $questionnaire_id);
-	$stmt->bindValue(2, $client_id);
-	$stmt->bindValue(3, $auditor_id);
-	$stmt->bindValue(4, $start_time);
-	$stmt->bindValue(5, $start_date);
-	$stmt->bindValue(6, $coordinates);
-	$stmt->bindValue(7, $end_time);
-	$stmt->bindValue(8, $end_date);
-	$stmt->bindValue(9, $end_coordinates);
-	$stmt->bindValue(10, $date);
-	$insert = $stmt->execute();
-	$answered_questionnaire_id = $app['db']->lastInsertId();
-
-	// Saving the questionnaire answers
-	if($insert == true){
+	$delete = $stmt->execute();
+	
+		//return $app->json($delete);
+	if ($delete) {
 		for($i=0; $i<count($answers); $i++){
 			$answer = $answers[$i];
 
@@ -680,7 +683,7 @@ $app->post('/v1/questionnaire/save', function(Request $request) use ($app){
 								fecha_alta)
 							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			$stmt = $app['db']->prepare($insert_answer);
-			$stmt->bindValue(1, $answered_questionnaire_id);
+			$stmt->bindValue(1, $answer['questionnaire_respondido_id']);
 			$stmt->bindValue(2, $answer['questionnaire_id']);
 			$stmt->bindValue(3, $answer['section_id']);
 			$stmt->bindValue(4, $answer['question_id']);
@@ -700,13 +703,127 @@ $app->post('/v1/questionnaire/save', function(Request $request) use ($app){
 			"result_code" => 1,
 			"message" => "El registro ha sido creado exitosamente."
 		);
-	}else{
-		$result = array(
-			"result_code" => 0,
-			"message" => "Ha ocurrido un error. Intente de nuevo más tarde."
-		);
+		return $app->json($result);
 	}
+
+
+
+});
+
+
+// Saving the questionnaire answers
+$app->post('/v1/questionnaire/create-cuestionary', function(Request $request) use ($app){
+
+
+	$data = json_decode($request->getContent(), true);
+	$request->request->replace(is_array($data) ? $data : array());	
+	$questionnaire_id = $request->request->get('questionnaire_id');
+	$auditor_id = $request->request->get('auditor_id');
+	$coordinates = $request->request->get('coordinates');
+	$company_id = $request->request->get('company_id');
+	$save_type = $request->request->get('save_type');
+
 	
-	return $app->json($result);
+	
+		$sql = $app['db']->createQueryBuilder();
+		$sql
+			->select('c.id_cuestionario_respondido AS idC')
+			->from('cuestionarios_respondidos', 'c')
+			->where('c.id_cuestionario = '.$questionnaire_id.' and c.id_cliente = '.$company_id.' and c.id_auditor='.$auditor_id);	
+		$stmt = $app['db']->prepare($sql);
+		$stmt->execute();
+		
+
+		$questionnaire = $stmt->fetch();
+	
+		//Si existe un cuestionario
+		if ($questionnaire) {
+			$result = array(
+				"result_code" => 1,
+				"message" => "El registro ha sido actualizado exitosamente.",
+				"new_cuestionary" => $questionnaire['idC']
+			);
+			return $app->json($result);
+		}else{ //Si no existe cuestionario
+			
+			
+			$start_time = date('H:i:s');
+			$start_date = date('Y-m-d');
+			$date = date('Y-m-d H:i:s');
+			// $answer_date = date('Y-m-d');
+			// $answer_time = date('H:i:s');
+
+			if($save_type == 'iniciado'){
+				$estatus = '0';
+			}
+
+			if($save_type == 'complete'){
+				$end_time = date('H:i:s');
+				$end_date = date('Y-m-d');
+				$end_coordinates = $coordinates;
+			}else{
+				$end_time = null;
+				$end_date = null;
+				$end_coordinates = null;
+			}
+
+			// Saving the main data of the questionnaire
+			$sql = "INSERT INTO cuestionarios_respondidos (
+						id_cuestionario,
+						id_cliente,
+						id_auditor,
+						hora_inicio,
+						fecha_de_inicio,
+						coordenadas_inicio,
+						hora_finalizacion,
+						fecha_finalizacion,
+						coordenadas_finalizacion,
+						fecha_alta,
+						estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			$stmt = $app['db']->prepare($sql);
+			$stmt->bindValue(1, $questionnaire_id);
+			$stmt->bindValue(2, $company_id);
+			$stmt->bindValue(3, $auditor_id);
+			$stmt->bindValue(4, $start_time);
+			$stmt->bindValue(5, $start_date);
+			$stmt->bindValue(6, $coordinates);
+			$stmt->bindValue(7, $end_time);
+			$stmt->bindValue(8, $end_date);
+			$stmt->bindValue(9, $end_coordinates);
+			$stmt->bindValue(10, $date);
+			$stmt->bindValue(11, $estatus);
+			$insert = $stmt->execute();
+
+
+			// Saving the questionnaire answers
+			if($insert == true){
+
+				$sql = $app['db']->createQueryBuilder();
+				$sql="SELECT MAX(id_cuestionario_respondido) AS idC FROM cuestionarios_respondidos;";
+				$stmt = $app['db']->prepare($sql);
+				$stmt->execute();
+				$questionnaire = $stmt->fetch();
+
+				
+				//$answered_questionnaire_id = $app['db']->lastInsertId();
+				$result = array(
+					"result_code" => 1,
+					"message" => "El registro ha sido creado exitosamente.",
+					"new_cuestionary" => $questionnaire['idC']
+				);
+			}else{
+
+				$result = array(
+					"result_code" => 0,
+					"message" => "Error al intentar crear cuestionario."
+				);
+			}
+
+			
+			return $app->json($result);	
+			//return $answered_questionnaire_id;
+			
+
+		}
 });
 

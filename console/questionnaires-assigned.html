@@ -10,6 +10,7 @@
 	<link href="css/questionnaires.css" rel="stylesheet">
 </head>
 <body>
+	<input type="hidden" id="hdn_coords">
 	<nav class="navbar navbar-inverse navbar-fixed-top">
 		<div class="container">
 			<div class="navbar-header">
@@ -63,12 +64,13 @@
 
 	<script src="js/jquery-1.12.4.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/location.js"></script>
     <script src="js/app.js"></script>
     <script src="js/questionnaires_assigned.js"></script>
     <script>
 		$(document).ready(function(){
 			setSessionData();
-
+			getLocation();
             setMenu('', '', '', ' class="active"', '', '');
 
             getQuestionnaires();

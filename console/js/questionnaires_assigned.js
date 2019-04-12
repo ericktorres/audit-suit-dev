@@ -44,7 +44,35 @@ var openQuestionnaire = function(questionnaire_id, questionnaire_name, questionn
 	localStorage.setItem('questionnaire_code', questionnaire_code);
 	localStorage.setItem('company_name', company_name);
 	localStorage.setItem('company_id', company_id);
+	var auditor_id = sessionStorage.getItem('audit-suite-user-id');
 
-	window.location.href = 'questionnaires-answer.html';
+	var coordinates = $('#hdn_coords').val();
+
+	//answers.push(answer);
+	
+	var params = {save_type: "iniciado", questionnaire_id: questionnaire_id, company_id: company_id, auditor_id: auditor_id,coordinates:coordinates};
+//	console.log(JSON.stringify(params));	
+
+	$.ajax({
+			url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/create-cuestionary',
+			method: 'POST',
+			dataType: 'json',
+			data: JSON.stringify(params),
+			success: function(response){
+				//console.log(response);
+				localStorage.setItem('questionnaire_respondido_id', response.new_cuestionary);
+				//console.log(localStorage);				
+				window.location.href = 'questionnaires-answer.html';
+			},
+			error: function(error){
+				console.log(error);
+			}
+		});
+		//console.log(localStorage);
+		//setTimeout(function(){ 
+		//	window.location.href = 'questionnaires-answer.html';
+		//}, 2000);
+
+
 }
 

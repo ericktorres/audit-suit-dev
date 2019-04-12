@@ -24,7 +24,7 @@
 			<div id="navbar" class="collapse navbar-collapse">
           		<ul class="nav navbar-nav">
             		<li><a href="dashboard.html">Dashboard</a></li>
-            		<li class="active"><a href="questionnaires-answer.html">Responder Cuestionario</a></li>
+            		<li class="active"><a href="questionnaires-answer.html">Elaboración de reporte</a></li>
             		<!--<li><a href="#">Reportes</a></li>-->
             	</ul>
             	<ul class="nav navbar-nav navbar-right">
@@ -45,8 +45,8 @@
 	<div class="container fifty-top">
 		<div class="page-header">
 			<button type="button" class="btn btn-default" onclick="javascript:history.back();"><span class="glyphicon glyphicon-chevron-left"></span> Regresar</button>
-  			<button type="button" class="btn btn-info" aria-label="Left Align" onclick="saveQuestionnaire('partial');" disabled><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Guardar Avance</button>
-  			<button type="button" class="btn btn-primary" aria-label="Left Align" onclick="saveQuestionnaire('complete');"><span class="glyphicon glyphicon-floppy-saved" aria-hidden="true"></span> Finalizar Cuestionario</button>
+  			<!-- <button type="button" class="btn btn-info" aria-label="Left Align" onclick="saveQuestionnaire('partial');" disabled><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Guardar Avance</button> -->
+  			<button type="button" class="btn btn-primary" aria-label="Left Align" onclick="saveQuestionnaire('complete');" disabled><span class="glyphicon glyphicon-floppy-saved" aria-hidden="true"></span> Finalizar Cuestionario</button>
 		</div>
 
         <div class="panel panel-default">
@@ -58,8 +58,8 @@
   			</div>
 
   			<!-- List group -->
-  			<ul id="answer_questionnaire_questions" class="list-group">
-  			</ul>
+  			<div id="answer_questionnaire_questions">
+  			</div>
 		</div>
 	</div>
 
@@ -74,7 +74,37 @@
 			getQuestions();
 			getLocation();
 			loadLogo();
+
+
+			$("#answer_questionnaire_questions").on("click", ".accordion" ,function(){
+				var panel = this.nextElementSibling;
+			    if (panel.style.display === "block") {
+			      panel.style.display = "none";
+			    } else {
+			      panel.style.display = "block";
+			    }
+			});
+
+			
+			$("#answer_questionnaire_questions").on("click", ".not_applyy" ,function(){
+				var checkStatus = $(this).is(':checked'); //obtener status check or uncheck
+
+			    var idPreg = $(this).attr("id"); //obtener id del boton no aplica
+				var regex = /(\d+)/g; //cualquier caracter numerico equivalente a [0-9]
+
+				if (checkStatus === true ) {
+					document.getElementsByName("rdo_question_"+idPreg.match(regex)[0])[0].checked = true;
+				}else{
+					document.getElementsByName("rdo_question_"+idPreg.match(regex)[0])[0].checked = false;
+				}
+
+
+			});
+
+
 		});
+
+
 	</script>
 </body>
 </html>
