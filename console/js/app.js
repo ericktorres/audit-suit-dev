@@ -20,7 +20,7 @@ var setSessionData = function(){
 }
 
 // Set the options menu according to the type of user
-var setMenu = function(activeDashboard, activeCompanies, activeUsers, activeQuest, activeReports, activeReply){
+var setMenu = function(activeDashboard, activeCompanies, activeUsers, activeQuest, activeReports, activeReply, asignarEvent){
 	
 	var email = sessionStorage.getItem('audit-suite-user');
 
@@ -47,6 +47,7 @@ var setMenu = function(activeDashboard, activeCompanies, activeUsers, activeQues
 				//menu += '<li'+activeQuest+'><a href="questionnaires.html">Cuestionarios</a></li>';
 				menu += '<li'+activeReports+'><a href="reports.html">Reportes</a></li>';
 				menu += '<li'+activeReply+'><a href="reply.html">Réplicas</a></li>';
+				menu += '<li'+asignarEvent+'><a href="asignar-eventos.html">Asignar Eventos</a></li>';
 			}else if(userPrivileges == '3'){
 				menu += '<li'+activeDashboard+'><a href="dashboard.html">Dashboard</a></li>';
 				menu += '<li'+activeQuest+'><a href="questionnaires-assigned.html">Cuestionarios</a></li>';

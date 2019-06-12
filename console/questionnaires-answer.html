@@ -8,6 +8,34 @@
 	<link href="css/bootstrap.min.css" rel="stylesheet">
 	<link href="css/app.css" rel="stylesheet">
 	<link href="css/questionnaires.css" rel="stylesheet">
+	<link href="css/bootstrap-datetimepicker.css" rel="stylesheet">
+	<style type="text/css">
+
+
+
+canvas {
+   /* width: 400px;
+    height: 150px;
+    margin: 0 0 19px 0px;*/
+    /* margin: calc(10vh - 150px) auto 0; */
+    /*background: #fff;
+    border-radius: 3px;
+    box-shadow: 0px 0px 15px 3px #ccc;
+    cursor: pointer;
+  */ 
+
+    /* text-align: center; */
+    /* display: block; */
+
+}
+
+		#espacio-firma p{
+		  text-align:center;
+		  cursor:pointer;
+		}
+
+
+	</style>
 </head>
 <body>
 	<nav class="navbar navbar-inverse navbar-fixed-top">
@@ -45,9 +73,60 @@
 	<div class="container fifty-top">
 		<div class="page-header">
 			<button type="button" class="btn btn-default" onclick="javascript:history.back();"><span class="glyphicon glyphicon-chevron-left"></span> Regresar</button>
-  			<!-- <button type="button" class="btn btn-info" aria-label="Left Align" onclick="saveQuestionnaire('partial');" disabled><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Guardar Avance</button> -->
-  			<button type="button" class="btn btn-primary" aria-label="Left Align" onclick="saveQuestionnaire('complete');" disabled><span class="glyphicon glyphicon-floppy-saved" aria-hidden="true"></span> Finalizar Cuestionario</button>
-		</div>
+  			<button type="button" class="btn btn-primary" aria-label="Left Align" onclick="completeQuestionnaire('complete');" id="finalizar-cuest" disabled><span class="glyphicon glyphicon-floppy-saved" aria-hidden="true"></span> Finalizar Cuestionario</button>
+  			<button type="button" class="btn btn-success" aria-label="Left Align" onclick="informeQuestionnaire('complete');" id="informe-cuest" disabled><span class="glyphicon glyphicon-thumbs-up" aria-hidden="true"></span> Generar Informe Preliminar</button>
+		    <button class="btn btn-default" onclick="viewInform();" id="viewReportPr"><span class="glyphicon glyphicon-eye-open"></span> Ver Informe Preliminar</button>
+        </div>
+
+		<form id="formAuditoria">
+  			<div class="form-group row">
+			    <label for="inputAtendio" class="col-sm-2 col-form-label">Quien atendió auditoría:</label>
+			    <div class="col-sm-4">
+			      <input type="text" class="form-control" id="inputAtendio" disabled>
+			    </div>
+				
+				<label for="datetimepicker6" class="col-sm-2 col-form-label">Inicio de auditoría:</label>
+				<div class='col-md-3'>
+			        <div class="form-group">
+			            <div class="input-group date" id="datetimepicker6">
+			                <input type="text" class="form-control" id="datepk6" disabled />
+			                <span class="input-group-addon">
+			                    <span class="glyphicon glyphicon-calendar"></span>
+			                </span>
+			            </div>
+			        </div>
+			    </div>
+
+                <div class="col-sm-6"></div>
+
+			    <label for="datetimepicker7" class="col-sm-2 col-form-label">Término de auditoría:</label>
+			    <div class='col-md-3'>
+			        <div class="form-group">
+			            <div class="input-group" date id="datetimepicker7">
+			                <input type="text" class="form-control" id="datepk7" disabled />
+			                <span class="input-group-addon">
+			                    <span class="glyphicon glyphicon-calendar"></span>
+			                </span>
+			            </div>
+			        </div>
+			    </div>
+			</div>
+            
+            <div class="row">
+
+                <div class="col-md-1" id="piza"><b>Firma de quien atiende:</b></div>
+                <canvas id="pizarra" class="col-md-4" style="border:1px solid #ddd;"></canvas>
+                
+                <div class="col-md-1">&nbsp;</div>
+                <div class="col-md-1" id="piza2"><b>Firma de Auditor:</b></div>
+                <canvas id="pizarra2" class="col-md-4" style="border:1px solid #ddd;"></canvas>
+                <div class="col-md-12">&nbsp;</div>
+
+            </div>
+
+        
+		</form>
+		
 
         <div class="panel panel-default">
         	<input type="hidden" id="hdn_coords">
@@ -64,28 +143,46 @@
 	</div>
 
 	<script src="js/jquery-1.12.4.min.js"></script>
+	<script src="js/moment-with-locales.js"></script>
     <script src="js/bootstrap.min.js"></script>
+   <script src="js/bootstrap-datetimepicker.js"></script>
     <script src="js/location.js"></script>
     <script src="js/answer_questionnaires.js"></script>
     <script src="js/app.js"></script>
     <script>
 		$(document).ready(function(){
+            $("#pizarra").hide();
+            $("#pizarra2").hide();
+            $("#piza").hide();
+            $("#piza2").hide();
 			setSessionData();
 			getQuestions();
 			getLocation();
 			loadLogo();
+            getInforme();
 
 
 			$("#answer_questionnaire_questions").on("click", ".accordion" ,function(){
+
 				var panel = this.nextElementSibling;
 			    if (panel.style.display === "block") {
 			      panel.style.display = "none";
 			    } else {
 			      panel.style.display = "block";
 			    }
+
 			});
 
-			
+
+/*			setTimeout(function(){ 
+				var last = $('.preg_section_5_7_1:last', this);
+
+				//$(".accordion div.preg_section_5_7_1").trigger("click");
+				//preg_section_5_7_1
+			}, 3000);
+*/
+
+
 			$("#answer_questionnaire_questions").on("click", ".not_applyy" ,function(){
 				var checkStatus = $(this).is(':checked'); //obtener status check or uncheck
 
@@ -101,8 +198,219 @@
 
 			});
 
+			//Calendarios
+			$('#datetimepicker6').datetimepicker({
+                format: 'YYYY-MM-DD HH:mm:ss'
+            });
+	        $('#datetimepicker7').datetimepicker({
+	           useCurrent: false, //Important! See issue #1075
+	           format: 'YYYY-MM-DD HH:mm:ss'
+            });
+	        $("#datetimepicker6").on("dp.change", function (e) {
+	            $('#datetimepicker7').data("DateTimePicker").minDate(e.date);
+	        });
+	        $("#datetimepicker7").on("dp.change", function (e) {
+	            $('#datetimepicker6').data("DateTimePicker").maxDate(e.date);
+	        });
 
 		});
+
+//======================================================================
+    // VARIABLES
+    //======================================================================
+    let miCanvas = document.querySelector('#pizarra');
+
+    let lineas = [];
+    let correccionX = 0;
+    let correccionY = 0;
+    let pintarLinea = false;
+    let firmaOk = false;
+
+    let posicion = miCanvas.getBoundingClientRect()
+    correccionX = posicion.x;
+    correccionY = posicion.y;
+
+    miCanvas.width = 400;
+    miCanvas.height = 150;
+
+    //=========================================================
+
+    let miCanvas2 = document.querySelector('#pizarra2');
+    
+    let lineas2 = [];
+    let correccionX2 = 0;
+    let correccionY2 = 0;
+    let pintarLinea2 = false;
+    let firmaOk2 = false;
+
+    let posicion2 = miCanvas2.getBoundingClientRect()
+    correccionX2 = posicion2.x;
+    correccionY2 = posicion2.y;
+
+    miCanvas2.width = 400;
+    miCanvas2.height = 150;
+
+
+
+    //======================================================================
+    // FUNCIONES
+    //======================================================================
+
+    /**
+     * Funcion que empieza a dibujar la linea
+     */
+    function empezarDibujo () {
+        pintarLinea = true;
+        lineas.push([]);
+    };
+
+    function empezarDibujo2 () {
+        pintarLinea2 = true;
+        lineas2.push([]);
+    };
+
+
+    /**
+     * Funcion dibuja la linea
+     */
+    function dibujarLinea (event) {
+        event.preventDefault();
+
+        if (pintarLinea) {
+            let ctx = miCanvas.getContext('2d')
+            // Estilos de linea
+            ctx.lineJoin = ctx.lineCap = 'round';
+            ctx.lineWidth = 2;
+            // Color de la linea
+            ctx.strokeStyle = '#000';
+            // Marca el nuevo punto
+            let nuevaPosicionX = 0;
+            let nuevaPosicionY = 0;
+            if (event.changedTouches == undefined) {
+                // Versión ratón
+                nuevaPosicionX = event.layerX;
+                nuevaPosicionY = event.layerY;
+            } else {
+                // Versión touch, pantalla tactil
+                nuevaPosicionX = event.changedTouches[0].pageX - correccionX;
+                nuevaPosicionY = event.changedTouches[0].pageY - correccionY;
+            }
+
+            // Guarda la linea
+            lineas[lineas.length - 1].push({
+                x: nuevaPosicionX,
+                y: nuevaPosicionY
+            });
+
+			ctx.beginPath();
+
+            lineas.forEach(function (segmento) {
+
+                
+                if (typeof segmento[0] === "undefined") {
+                    
+                } else {
+                    ctx.moveTo(segmento[0].x, segmento[0].y);
+                        segmento.forEach(function (punto, index) {
+                        ctx.lineTo(punto.x, punto.y);
+                    });
+                }
+
+            });
+            ctx.stroke();
+
+        }
+    }
+
+    //==================2
+        /**
+     * Funcion dibuja la linea
+     */
+        function dibujarLinea2 (event) {
+            event.preventDefault();
+
+            if (pintarLinea2) {
+                let ctx2 = miCanvas2.getContext('2d')
+                // Estilos de linea
+                ctx2.lineJoin = ctx2.lineCap = 'round';
+                ctx2.lineWidth = 2;
+                // Color de la linea
+                ctx2.strokeStyle = '#000';
+                // Marca el nuevo punto
+                let nuevaPosicionX2 = 0;
+                let nuevaPosicionY2 = 0;
+                if (event.changedTouches == undefined) {
+                    // Versión ratón
+                    nuevaPosicionX2 = event.layerX;
+                    nuevaPosicionY2 = event.layerY;
+                } else {
+                    // Versión touch, pantalla tactil
+                    nuevaPosicionX2 = event.changedTouches[0].pageX - correccionX2;
+                    nuevaPosicionY2 = event.changedTouches[0].pageY - correccionY2;
+                }
+
+                // Guarda la linea
+                lineas2[lineas2.length - 1].push({
+                    x: nuevaPosicionX2,
+                    y: nuevaPosicionY2
+                });
+
+                ctx2.beginPath();
+
+                lineas2.forEach(function (segmento) {
+
+                    
+                    if (typeof segmento[0] === "undefined") {
+                        
+                    } else {
+                        ctx2.moveTo(segmento[0].x, segmento[0].y);
+                            segmento.forEach(function (punto, index) {
+                            ctx2.lineTo(punto.x, punto.y);
+                        });
+                    }
+
+                });
+                ctx2.stroke();
+
+            }
+        }
+
+
+    /**
+     * Funcion que deja de dibujar la linea
+     */
+    function pararDibujar () {
+        pintarLinea = false;
+        firmaOk = true;
+    }
+
+    function pararDibujar2 () {
+        pintarLinea2 = false;
+        firmaOk2 = true;
+    }
+
+    //======================================================================
+    // EVENTOS
+    //======================================================================
+
+    // Eventos raton
+    miCanvas.addEventListener('mousedown', empezarDibujo, false);
+    miCanvas.addEventListener('mousemove', dibujarLinea, false);
+    miCanvas.addEventListener('mouseup', pararDibujar, false);
+
+    // Eventos pantallas táctiles
+    miCanvas.addEventListener('touchstart', empezarDibujo, false);
+    miCanvas.addEventListener('touchmove', dibujarLinea, false);
+
+
+    // Eventos raton
+    miCanvas2.addEventListener('mousedown', empezarDibujo2, false);
+    miCanvas2.addEventListener('mousemove', dibujarLinea2, false);
+    miCanvas2.addEventListener('mouseup', pararDibujar2, false);
+
+    // Eventos pantallas táctiles
+    miCanvas2.addEventListener('touchstart', empezarDibujo2, false);
+    miCanvas2.addEventListener('touchmove', dibujarLinea2, false);
 
 
 	</script>

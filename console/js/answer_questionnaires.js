@@ -1,4 +1,44 @@
 
+
+var finalizar = 1;
+var botones_guardar = 1;
+
+//Get status informe preliminar
+var getInforme = function(){
+
+	$.ajax({
+		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/get-informe/'+localStorage.getItem('questionnaire_respondido_id'),
+		dataType: 'json',
+		success: function(response){
+			
+
+			if (response.informe_preliminar == 1) {
+				$("#informe-cuest").hide();
+				$("#formAuditoria").hide();
+				document.getElementById("finalizar-cuest").disabled = false;
+				botones_guardar =0;
+								//Ya se finalizó el cuestionario
+				if (response.finalizado == 1) {
+					document.getElementById("finalizar-cuest").disabled = true;
+				}else{
+					document.getElementById("finalizar-cuest").disabled = false;
+					
+				}
+
+			}else{
+				$("#viewReportPr").hide();
+			}
+
+			
+
+		},
+		error: function(error){
+			console.log('Ha ocurrido un error: ' + error);
+		}
+	});
+
+}
+
 var getQuestions = function(){
 	// Setting the questionnaire data
 	var questionnaireHead = '<b>CUESTIONARIO:</b> ' + localStorage.getItem("questionnaire_name");
@@ -11,22 +51,41 @@ var getQuestions = function(){
 	var question = null;
 	var option = null;
 	var questionnaire_id = localStorage.getItem('questionnaire_id');
+	var questionnaire_respondido_id = localStorage.getItem('questionnaire_respondido_id');
 	var idSeccionPreg = '';
 
+
 	$.ajax({
-		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/sections/get/'+questionnaire_id+'/1',
+		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/sections/get/'+questionnaire_id+'/'+questionnaire_respondido_id,
 		dataType: 'json',
 		success: function(response){
 			for(var i=0; i<response.length; i++){
+
 				section = response[i];
 				idSeccionPreg = "preg_section_"+section.id+'_'+section.questionnaire_id+'_'+section.section_number;
 
+				var res_avance = Math.round(((100 / section.sum_preguntas) * section.sum_respuestas));
+				var progresp="";
+
+				if (res_avance >= 0 && res_avance <= 39) {
+					progresp = "progress-bar-danger";
+					finalizar = 0;
+				}
+				if (res_avance >= 40 && res_avance <= 99 ) {
+					progresp = "progress-bar-warning";
+					finalizar = 0;
+				}
+				if (res_avance==100) {
+					progresp = "progress-bar-success";
+				}
+				//console.log(res_avance + ' Color: ' + progresp);
+
 				html += '<button class="accordion">';
-				html += '<div class="progress"><div class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 10%;"></div></div>';
+				html += '<div class="progress"><div class="progress-bar '+progresp+'" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: '+res_avance+'%;"></div></div>';
 				html += '<span style="font-weight:bolder;">' + section.section_number + '.- ' + section.name.toUpperCase(); + '</span>';
 				html += '</button>';
 				html += '<div class="paneles '+idSeccionPreg+'" style="color:#1C1C1C;">';
-				
+
 
 				for(var j=0; j<section.questions.length; j++){
 					question = section.questions[j];
@@ -47,51 +106,67 @@ var getQuestions = function(){
 						html += '<table class="tbl-answer-questionnaire">';
 
 						for(var k=0; k<question.options.length; k++){
-							var string_selected_value = questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value;
-							console.log(string_selected_value);
-
-							if(question.question_result.string_selected_value != false){
-								console.log(question.question_result.string_selected_value);
-
-								if(question.question_result.string_selected_value == string_selected_value){
-									var radio_status = ' checked';
-								}else{
-									var radio_status = '';
-								}	
-							}
-							
 							option = question.options[k];
+
+							var string_selected_value = questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value;
+
+							if (question.question_result==false) {
+								var obser_value = '';
+								var obser_conf = '';
+								var radio_status = '';
+								var noaply_status = '';
+							}else{
+
+								if (question.question_result.not_apply == 1) {
+									 noaply_status = ' checked';
+								}else{
+									 noaply_status = '';
+								}
+
+								if(question.question_result.string_selected_value != false){
+									if(question.question_result.string_selected_value == string_selected_value){
+										 radio_status = ' checked';
+									}else{
+										 radio_status = '';
+									}	
+								}
+
+								if(question.question_result.observations !=false) {
+									 obser_value = question.question_result.observations;
+								}else{
+									 obser_value = '';
+								}
+								
+								if(question.question_result.nonconformity !=false) {
+									 obser_conf = question.question_result.nonconformity;
+								}else{
+									 obser_conf = '';
+								}
+							}
+
 							
 							html += '<tr>';
 							html += '<td width="25">';
 							html += '<input type="radio" name="rdo_question_'+question.question_id+'" value="'+questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value+'"'+radio_status+'>';
+							//html += '<input type="radio" name="rdo_question_'+question.question_id+'" value="'+questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value+'">';
 							html += '</td>';
 							html += '<td>'+option.question_option+'</td>';
 							html += '</tr>';							
 						}
 
-						html += '<tr><td colspan="2"><textarea class="form-control" id="txa_question_obs_'+question.question_id+'" placeholder="Ingrese aquí sus observaciones" cols="80"></textarea></td></tr>';
-						html += '<tr><td colspan="2"><textarea class="form-control" id="txa_question_nonconformity_'+question.question_id+'" placeholder="Ingrese aquí sus no conformidades" cols="80"></textarea></td></tr>';
-						html += '<tr><td colspan="2">No Aplica <input type="checkbox" class="not_applyy" id="chk_not_apply_'+question.question_id+'"></td></tr>';
+						html += '<tr><td colspan="2"><textarea class="form-control" id="txa_question_obs_'+question.question_id+'" placeholder="Ingrese aquí sus observaciones" cols="80">'+obser_value+'</textarea></td></tr>';
+						html += '<tr><td colspan="2"><textarea class="form-control" id="txa_question_nonconformity_'+question.question_id+'" placeholder="Ingrese aquí sus no conformidades" cols="80">'+obser_conf+'</textarea></td></tr>';
+						html += '<tr><td colspan="2">No Aplica <input type="checkbox" class="not_applyy" id="chk_not_apply_'+question.question_id+'"'+noaply_status+'></td></tr>';
 						html += '</table>';
 					}else if(question.type == '3'){
 						html += '<table class="tbl-answer-questionnaire">';
 
 						for(var k=0; k<question.options.length; k++){
-							var string_selected_value = questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value;
-
-							if(question.question_result.string_selected_value != false){
-								if(question.question_result.string_selected_value == string_selected_value){
-									var radio_status = ' checked';
-								}else{
-									var radio_status = '';
-								}	
-							}
 
 							option = question.options[k];
-							
+
 							html += '<tr>';
-							html += '<td width="25"><input type="checkbox" name="rdo_question_'+question.question_id+'" value="'+questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value+'"></td>';
+							html += '<td width="25"><input type="checkbox" name="rdo_question_'+question.question_id+'" value="'+questionnaire_id+'_'+section.id+'_'+question.question_id+'_'+option.option_id+'_'+option.value+'"'+radio_status+'></td>';
 							html += '<td>'+option.question_option+'</td>';
 							html += '</tr>';							
 						}
@@ -103,18 +178,23 @@ var getQuestions = function(){
 					}
 					html += '<hr></div>';
 				}
-				html +='<button type="button" class="btn btn-info pull-right saveQuestionnaire" name="'+idSeccionPreg+'" style="margin:0px 0px 12px 0"><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Guardar Avance</button>';
+				if (botones_guardar == 1) {
+					html +='<button type="button" class="btn btn-info pull-right saveQuestionnaire" name="'+idSeccionPreg+'" style="margin:0px 0px 12px 0"><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Guardar Avance</button>';				
+				}
+
 				html += '</div>';
 			}
-	
 			// Adding sections
 			$('#answer_questionnaire_questions').html(html);
+
 		},
 		error: function(error){
 			console.log('Ha ocurrido un error: ' + error);
 		}
 	});
 }
+
+
 
 
 	
@@ -160,8 +240,10 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 
 	});
 
-	//console.log(localStorage);
-	
+	if (params === undefined) {
+	    alert("Responde al menos una pregunta para continuar.");
+	}
+	else {
 		$.ajax({
 		 	url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/save',
 		 	method: 'POST',
@@ -169,13 +251,123 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 		 	data: JSON.stringify(params),
 		 	success: function(response){
 		 		alert(response.message);
-		 		console.log(response);
+		 		//console.log(response);
+		 		//console.log(divRadios);
+		 		location.reload();
 		 	},
 		 	error: function(error){
 		 		console.log(error);
 		 	}
 		 });
-	
+
+	}
 });
+	
+
+	
+	setTimeout(function(){
+
+		if(finalizar == 1) {
+			document.getElementById("informe-cuest").disabled = false;
+			document.getElementById("inputAtendio").disabled = false;
+			document.getElementById("datepk6").disabled = false;
+			document.getElementById("datepk7").disabled = false;
+			$("#pizarra").show();
+			$("#pizarra2").show();
+			$("#piza").show();
+            $("#piza2").show();
+			
+		}else{
+			document.getElementById("informe-cuest").disabled = true;
+			document.getElementById("inputAtendio").disabled = true;
+			document.getElementById("datepk6").disabled = true;
+			document.getElementById("datepk7").disabled = true;
+		}
+	}, 2000);
+
+	
+	
+
+	var viewInform = function(){
+		location.href = 'informe.html';
+	}
+
+	var informeQuestionnaire = function(){
+		var atiende = document.getElementById("inputAtendio").value;
+		var dateInicia = document.getElementById("datepk6").value;
+		var dateTermina = document.getElementById("datepk7").value;		
+
+		var can = document.getElementById('pizarra');
+		var can2 = document.getElementById('pizarra2');
+		var img = new Image();
+		var img2 = new Image();
+		img.src = can.toDataURL();
+		img2.src = can2.toDataURL();
+
+		if (firmaOk === true && dateInicia != "" && dateTermina != "" && atiende != "") {
+			//console.log("Is OK");
+			var params = {id_cuestionario_respondido: localStorage.getItem('questionnaire_respondido_id'), atiende: atiende,firma: img.src, firma2: img2.src,dateInicia: dateInicia, dateTermina: dateTermina};
+			//console.log(JSON.stringify(params));
+			$.ajax({
+				url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/create-informe',
+				method: 'POST',
+				dataType: 'json',
+				data: JSON.stringify(params),
+				success: function(response){
+
+					if (response.result_code == 1) {
+						alert(response.message);
+						location.reload();
+					}else{
+						alert(response.message);
+					}
+				},
+				error: function(error){
+					console.log(error);
+				}
+			});
+
+
+		}else{
+			alert("Responder datos de Auditoria para continuar.");
+		}
+
+	}
+
+	var completeQuestionnaire = function(){
+
+		
+
+		var params = {id_cuestionario_respondido: localStorage.getItem('questionnaire_respondido_id')};
+	
+		//console.log(JSON.stringify(params));
+
+		$.ajax({
+				url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/finaliza-cuestionary',
+				method: 'POST',
+				dataType: 'json',
+				data: JSON.stringify(params),
+				success: function(response){
+					//console.log(response);
+					if (response.result_code == 1) {
+						alert(response.message);
+						location.reload();
+					}else{
+						alert(response.message);
+					}
+
+					//console.log(localStorage);				
+					window.location.href = 'questionnaires-answer.html';
+				},
+				error: function(error){
+					console.log(error);
+				}
+			});
+	
+
+	}
+
+
+
 
 
