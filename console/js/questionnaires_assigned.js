@@ -19,13 +19,12 @@ var getQuestionnaires = function(){
 			for(var i=0; i<total; i++){ //inicia for
 				
 				questionnaire = response[i];
-				var params = {save_type: "iniciado", questionnaire_id: questionnaire.questionnaire_id, company_id: questionnaire.company_id, auditor_id: sessionStorage.getItem('audit-suite-user-id')};				
-			
+				console.log(questionnaire);
 				rows += '<tr>';
-  				rows += '<td>'+j+'</td>';
-  				rows += '<td>'+questionnaire.company_name+'</td>';
-  				rows += '<td>'+questionnaire.id_cuestionario_respondido+'</td>';  				
+  				rows += '<td>'+questionnaire.id_cuestionario_respondido+'</td>';
+  				rows += '<td>'+questionnaire.company_name+'</td>';			
   				rows += '<td>'+questionnaire.questionnaire_name+'</td>';
+  				rows += '<td>'+questionnaire.fecha_auditoria+'</td>';  	
   				rows += '<td>'+ questionnaire.porcentaje_question +' '+ questionnaire.estados.finalizado +' '+ questionnaire.estados.informe_preliminar+ '</td>';
   				rows += '<td align="center">';
   				rows += '<button type="button" class="btn btn-default" onclick="openQuestionnaire(\''+questionnaire.questionnaire_id+'\', \''+questionnaire.questionnaire_name+'\', \''+questionnaire.questionnaire_code+'\', \''+questionnaire.company_name+'\', \''+questionnaire.company_id+'\', \''+questionnaire.id_cuestionario_respondido+'\');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';

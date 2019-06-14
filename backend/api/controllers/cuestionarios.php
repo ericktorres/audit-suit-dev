@@ -979,10 +979,10 @@ $app->post('/v1/questionnaire/finaliza-cuestionary', function(Request $request) 
 // Este controller obtiene la relacion de  companies asignadas a auditor
 $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{auditor_id}', function($auditor_id) use ($app){
 	$sql = $app['db']->createQueryBuilder();
-	$sql ="select cr.id_cliente as company_id,cr.id_cuestionario as questionnaire_id, cr.id_cuestionario_respondido ,e.nombre_comercial as company_name, c.codigo as questionnaire_code, c.nombre as questionnaire_name, cr.estado AS finalizado, cr.informe_preliminar from cuestionarios_respondidos as cr
+	$sql ="select cr.id_cliente as company_id,cr.id_cuestionario as questionnaire_id, cr.id_cuestionario_respondido,cr.fecha_auditoria ,e.nombre_comercial as company_name, c.codigo as questionnaire_code, c.nombre as questionnaire_name, cr.estado AS finalizado, cr.informe_preliminar from cuestionarios_respondidos as cr
 		inner join empresas as e on e.id_empresa = cr.id_cliente
 		inner join cuestionarios as c on c.id_cuestionario = cr.id_cuestionario
-		where cr.id_auditor =".$auditor_id;
+		where cr.id_auditor=".$auditor_id;
 	$stmt = $app['db']->prepare($sql);
 	$stmt->execute();
 	$questionarios = $stmt->fetchAll();
@@ -990,44 +990,19 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 	
 		for ($i=0; $i < count($questionarios) ; $i++) { 
 		
-			//Se crea event pero no asignan cuestionario
-			/*if ($questionarios[$i]['questionnaire_id']===null) {
-				 	
-				 	$registro['id_cuestionario_respondido'] = 0; 
-				 	$registro['finalizado'] = '<span class="label label-danger"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Cuestionario no asignado</span>';
-					$registro['informe_preliminar'] = '<span class="label label-danger"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Cuestionario no asignado</span>';
-			}else{*/
-			 /*	$sql = $app['db']->createQueryBuilder();
-				$sql
-					->select('c.id_cuestionario_respondido AS idC')
-					->from('cuestionarios_respondidos', 'c')
-					->where('c.id_cuestionario = '.$questionarios[$i]['questionnaire_id'].' and c.id_cliente = '.$questionarios[$i]['company_id'].' and c.id_auditor='.$auditor_id);	
-				$stmt = $app['db']->prepare($sql);
-				$stmt->execute();
-				$questionnaire = $stmt->fetch();
-*/
-/*					$sql2 = $app['db']->createQueryBuilder();
-					$sql2
-						->select('s.estado AS finalizado, s.informe_preliminar')
-						->from('cuestionarios_respondidos', 's')
-						->where('s.id_cuestionario_respondido ='.$questionarios[$i]['id_cuestionario_respondido']);
-					$stmt2 = $app['db']->prepare($sql2);
-					$stmt2->execute();
-					$registro = $stmt2->fetch();
-*/					
-					//Evento finalizado
+
 			$registro['finalizado']="";
 			$registro['informe_preliminar']="";
 			if ($questionarios[$i]['finalizado']==1) {
 				$registro['finalizado'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Finalizado</span>';
 			}else{
-				$registro['finalizado'] = '<span class="label label-warning"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No finalizado</span>';
+				$registro['finalizado'] = '<span class="badge"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No finalizado</span>';
 			}
 			//Informe general generado 
 			if ($questionarios[$i]['informe_preliminar']==1) {
 				$registro['informe_preliminar'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe Generado</span>';
 			}else{
-				$registro['informe_preliminar'] = '<span class="label label-warning"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe no generado</span>';
+				$registro['informe_preliminar'] = '<span class="badge"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe no generado</span>';
 			}
 			//}
 			$questionarios[$i]['estado_cuestionario'] = $registro;	//Estados
@@ -1053,10 +1028,10 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 			$questionarios[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
 
 			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
-			$cuestio = '<span class="label label-info"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			$cuestio = '<span class="badge"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 
 			if($res_avance == 0) {
-				$cuestio = '<span class="label label-danger"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+				$cuestio = '<span class="badge"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 			}
 			if($res_avance == 100) {
 				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
@@ -1068,6 +1043,7 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 				'total_preguntas' => $questionarios[$i]['total_preguntas'],
 				'total_respuestas' => $questionarios[$i]['total_respuestas'],
 				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $questionarios[$i]['fecha_auditoria'],
 				'questionnaire_id' => $questionarios[$i]['questionnaire_id'],
 				'id_cuestionario_respondido' => $questionarios[$i]['id_cuestionario_respondido'],
 			 	'questionnaire_name' => $questionarios[$i]['questionnaire_name'],

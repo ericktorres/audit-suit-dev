@@ -50,22 +50,20 @@ canvas {
 				<a id="logo_container" class="navbar-brand" href="#"></a>
 			</div>
 			<div id="navbar" class="collapse navbar-collapse">
-          		<ul class="nav navbar-nav">
-            		<li><a href="dashboard.html">Dashboard</a></li>
-            		<li class="active"><a href="questionnaires-answer.html">Elaboración de reporte</a></li>
-            		<!--<li><a href="#">Reportes</a></li>-->
-            	</ul>
-            	<ul class="nav navbar-nav navbar-right">
-            		<li class="dropdown">
-              			<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span id="lbl_user_name"></span> <span class="caret"></span></a>
-              			<ul class="dropdown-menu">
-              				<li><a href="change-password.html">Cambiar contraseña</a></li>
-                			<li><a href="javascript:logout();">Cerrar sesión</a></li>
-                		</ul>
-            		</li>
-            	</ul>
-          			
-        	</div><!--/.nav-collapse -->
+                <ul class="nav navbar-nav" id="ul_menu">
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span id="lbl_user_name"></span> <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="change-password.html">Cambiar contraseña</a></li>
+                            <li><a href="javascript:logout();">Cerrar sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                    
+            </div><!--/.nav-collapse -->
 		</div>
 	</nav>
 
@@ -158,6 +156,7 @@ canvas {
 			setSessionData();
 			getQuestions();
 			getLocation();
+            setMenu('', '', '', ' class="active"', '','');
 			loadLogo();
             getInforme();
 
@@ -172,15 +171,6 @@ canvas {
 			    }
 
 			});
-
-
-/*			setTimeout(function(){ 
-				var last = $('.preg_section_5_7_1:last', this);
-
-				//$(".accordion div.preg_section_5_7_1").trigger("click");
-				//preg_section_5_7_1
-			}, 3000);
-*/
 
 
 			$("#answer_questionnaire_questions").on("click", ".not_applyy" ,function(){

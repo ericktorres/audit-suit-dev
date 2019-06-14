@@ -50,7 +50,7 @@ var setMenu = function(activeDashboard, activeCompanies, activeUsers, activeQues
 				menu += '<li'+asignarEvent+'><a href="asignar-eventos.html">Asignar Eventos</a></li>';
 			}else if(userPrivileges == '3'){
 				menu += '<li'+activeDashboard+'><a href="dashboard.html">Dashboard</a></li>';
-				menu += '<li'+activeQuest+'><a href="questionnaires-assigned.html">Cuestionarios</a></li>';
+				menu += '<li'+activeQuest+'><a href="questionnaires-assigned.html">Auditorías</a></li>';
 				menu += '<li'+activeReports+'><a href="reports.html">Reportes</a></li>';
 				menu += '<li'+activeReply+'><a href="reply.html">Réplicas</a></li>';
 			}
