@@ -72,7 +72,7 @@ var getResultsBySection = function(show_chart){
 	setTimeout(function(){
 
 		$.ajax({
-			//url: 'https://bluehand.com.mx/backend/api/v1/reports/score-by-section/'+answered_questionnaire_id,
+			//url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/score-by-section/'+answered_questionnaire_id,
 			url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/percentage-by-section/'+answered_questionnaire_id,
 			dataType: 'json',
 			success: function(response){
@@ -321,7 +321,7 @@ var getReportQuestions = function(){
 
 var backToReports = function(){
 	location.href = 'reports.html';
-	//window.location.replace('https://bluehand.com.mx/console/reports.html');
+	//window.location.replace('https://dev.bluehand.com.mx/console/reports.html');
 }
 
 

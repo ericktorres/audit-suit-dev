@@ -57,9 +57,13 @@ var getReports = function(){
 }
 
 var viewReport = function(report_id){
+	var answered_questionnaire_id = localStorage.setItem('questionnaire_respondido_id', report_id);
+
 	localStorage.setItem('audit-suit-report-id', report_id);
+	//console.log(localStorage);
 	location.href = 'report.html';
-	//window.location.replace('https://bluehand.com.mx/console/report.html');
+
+	//window.location.replace('https://dev.bluehand.com.mx/console/report.html');
 }
 
 
