@@ -996,13 +996,13 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 			if ($questionarios[$i]['finalizado']==1) {
 				$registro['finalizado'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Finalizado</span>';
 			}else{
-				$registro['finalizado'] = '<span class="badge"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No finalizado</span>';
+				$registro['finalizado'] = '<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No finalizado</span>';
 			}
 			//Informe general generado 
 			if ($questionarios[$i]['informe_preliminar']==1) {
 				$registro['informe_preliminar'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe Generado</span>';
 			}else{
-				$registro['informe_preliminar'] = '<span class="badge"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe no generado</span>';
+				$registro['informe_preliminar'] = '<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe no generado</span>';
 			}
 			//}
 			$questionarios[$i]['estado_cuestionario'] = $registro;	//Estados
@@ -1028,10 +1028,10 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 			$questionarios[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
 
 			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
-			$cuestio = '<span class="badge"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 
 			if($res_avance == 0) {
-				$cuestio = '<span class="badge"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 			}
 			if($res_avance == 100) {
 				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
@@ -1094,10 +1094,10 @@ where r_gerentes_auditores.id_gerente =".$id_gerente;
 			$eventos[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
 
 			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
-			$cuestio = '<span class="label label-info"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 
 			if($res_avance == 0) {
-				$cuestio = '<span class="label label-danger"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 			}
 			if($res_avance == 100) {
 				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';

@@ -19,7 +19,7 @@ var getQuestionnaires = function(){
 			for(var i=0; i<total; i++){ //inicia for
 				
 				questionnaire = response[i];
-				console.log(questionnaire);
+				//console.log(questionnaire);
 				rows += '<tr>';
   				rows += '<td>'+questionnaire.id_cuestionario_respondido+'</td>';
   				rows += '<td>'+questionnaire.company_name+'</td>';			

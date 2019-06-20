@@ -1,9 +1,13 @@
+//var answered_questionnaire_id = null;
 
+//console.log(localStorage);
 if($('#hdn_report_id').val() != ""){
 	var answered_questionnaire_id = $('#hdn_report_id').val();
-	console.log('1 ' + answered_questionnaire_id);
+	//console.log('1 ' + answered_questionnaire_id);
 }else{
-	var answered_questionnaire_id = localStorage.getItem('audit-suit-report-id');
+	//var answered_questionnaire_id = localStorage.getItem('audit-suit-report-id');
+	var answered_questionnaire_id = localStorage.getItem('questionnaire_respondido_id');
+	
 	//console.log('2 ' + answered_questionnaire_id);
 }
 
@@ -20,6 +24,7 @@ var getGeneralData = function(){
 		$('#txt_audit_date').attr('disabled', 'disabled');
 	}
 
+	//console.log(answered_questionnaire_id);
 	$.ajax({
 		url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/general-data/'+answered_questionnaire_id,
 		dataType: 'json',
