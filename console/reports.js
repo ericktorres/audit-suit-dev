@@ -2,7 +2,6 @@ var user_type = localStorage.getItem('audit-suite-user-type');
 var user_id = sessionStorage.getItem('audit-suite-user-id');
 var user_privileges = localStorage.getItem('audit-suite-privilege-user');
 var is_reviser = localStorage.getItem('audit-suite-user-reviser');
-var is_regional = localStorage.getItem('audit-suite-user-regional');
 
 
 //Listado para usuario Administrador
@@ -86,11 +85,10 @@ var getReportsAdmin = function(){
 //listado para usuarios gerente.
 var getReportsGerente = function(){
 	
-	if (user_type=="Externo") { 	//Gerente externo a secas, puede ver reportes únicamente liberados.
-		//console.log("Gerento externo");
-
+	if (user_type=="Externo") {
+		console.log("Gerente externo a secas");
 		$.ajax({
-			url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/auditors/get-eventos-gerente-externo-auditor-fin/'+user_id+'/'+is_reviser+'/'+is_regional,
+			url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/auditors/get-eventos-gerente-externo-auditor-fin/'+user_id,
 			dataType: 'json',
 			success: function(response){
 				

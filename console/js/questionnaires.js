@@ -112,7 +112,7 @@ var goToAddSections = function(id, name, code){
 }
 
 var deleteQuestionnaire = function(questionnaire_id){
-	var confirm_delete = confirm('¿Está seguro de eliminar este registro?');
+	var confirm_delete = confirm('ALERTA!! va a proceder a eliminar este registro, si desea eliminarlo de click en ACEPTAR\n de lo contrario de click en CANCELAR.');
 
 	if(confirm_delete == true){
 		$.ajax({
@@ -150,7 +150,7 @@ var getSections = function(){
 	var questionnaire_id = localStorage.getItem('questionnaire_id');
 
 	$.ajax({
-		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/sections/get/'+questionnaire_id,
+		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/sections2/get/'+questionnaire_id,
 		dataType: 'json',
 		success: function(response){
 

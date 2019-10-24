@@ -212,6 +212,7 @@ var getReply = function(){
 			var reply = null;
 			var counter = 1;
 			var comment_counter = 1;
+			var success_legend = null;
 
 			for(var i=0; i<response.length; i++){
 				reply = response[i];
@@ -509,7 +510,7 @@ var showHideRows = function(rows_id){
 
 var getAvailableReports = function(){
 	var api_call_r = 'https://dev.bluehand.com.mx/backend/api/v1/reports/get/'+user_id+'/'+user_privileges;
-	//console.log(api_call_r);
+	console.log(api_call_r);
 	
 	$.ajax({
 		url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/get/'+user_id+'/'+user_privileges,
@@ -547,12 +548,12 @@ var getAvailableReports = function(){
 					var status_value = 1;
 				}
 
-				html += '<td><label class="switch"><input id="chk_close_replies_'+report.report_id+'" type="checkbox"'+closed_report+''+allow_close+' onclick="closeReportReplies('+report.report_id+', '+status_value+')"><span class="slider round"></span></label></td>';
 				html += '<td style="text-align: center;"><span class="badge">'+report.new_reply+'</span></td>';
 				html += '<td>';
 				html += '<button class="btn btn-default" onclick="goToReplies('+report.report_id+', '+report.client_id+', \''+report.client_name+'\');"><span class="glyphicon glyphicon-eye-open"></span></button>&nbsp;';
 				html += '<button class="btn btn-default" onclick="openAddDueDate('+report.report_id+');"><span class="glyphicon glyphicon-calendar"></span></button>';
 				html += '</td>';
+				html += '<td><label class="switch"><input id="chk_close_replies_'+report.report_id+'" type="checkbox"'+closed_report+''+allow_close+' onclick="closeReportReplies('+report.report_id+', '+status_value+')"><span class="slider round"></span></label></td>';
 				html += '</tr>';
 			}
 
@@ -564,6 +565,13 @@ var getAvailableReports = function(){
 	});
 }
 
+$("#myInput").show();
+$("#myInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#tbody_reports tr").filter(function() {
+        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+});
 
 var backToReply = function(){
 	location.href = 'reply.html';

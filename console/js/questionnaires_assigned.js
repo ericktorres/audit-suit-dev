@@ -1,8 +1,15 @@
 
 var getQuestionnaires = function(){
+	$("#myInput").show();
+	$("#myInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#tbody_questionnaires_assigned tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+    });
+
 	var auditor_id = sessionStorage.getItem('audit-suite-user-id');
 	//console.log('Auditor ID: ' + auditor_id);
-	console.log(auditor_id);
 
 	$.ajax({
 		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaires/auditors/get-list-questionnaires-and-clients/'+auditor_id,
@@ -23,12 +30,15 @@ var getQuestionnaires = function(){
 				rows += '<tr>';
   				rows += '<td>'+questionnaire.id_cuestionario_respondido+'</td>';
   				rows += '<td>'+questionnaire.company_name+'</td>';			
-  				rows += '<td>'+questionnaire.questionnaire_name+'</td>';
+  				rows += '<td>'+questionnaire.questionnaire_code+'</td>';
   				rows += '<td>'+questionnaire.fecha_auditoria+'</td>';  	
-  				rows += '<td>'+ questionnaire.porcentaje_question +' '+ questionnaire.estados.finalizado +' '+ questionnaire.estados.informe_preliminar+ '</td>';
+  				rows += '<td>'+ questionnaire.porcentaje_question +'</td>';
+				rows += '<td>'+ questionnaire.estados.finalizado +'</td>';
+				rows += '<td>'+ questionnaire.estados.informe_preliminar+ '</td>';
   				rows += '<td align="center">';
   				rows += '<button type="button" class="btn btn-default" onclick="openQuestionnaire(\''+questionnaire.questionnaire_id+'\', \''+questionnaire.questionnaire_name+'\', \''+questionnaire.questionnaire_code+'\', \''+questionnaire.company_name+'\', \''+questionnaire.company_id+'\', \''+questionnaire.id_cuestionario_respondido+'\');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
   				rows += '</td>';
+  				rows += '<td>'+ questionnaire.show_informe+ '</td>';
   				rows += '</tr>';
 
 				j++;
@@ -82,5 +92,8 @@ var openQuestionnaire = function(questionnaire_id, questionnaire_name, questionn
 		//}, 2000);
 }
 
-
+var viewInform = function(new_cuestionary){
+	localStorage.setItem('questionnaire_respondido_id', new_cuestionary);
+	location.href = 'informe.html';
+}
 

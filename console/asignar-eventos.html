@@ -47,15 +47,20 @@
 		</div>
 
 		<div class="table-responsive">
+            <input id="myInput" type="text" placeholder="Buscar.." style="display: none;">
+            <br><br>
 			<table class="table table-striped">
 				<thead>
                 	<tr>
                   		<th>#</th>
+                        <th id="ger-admin" style="display: none;">GERENTE</th>
                         <th>AUDITOR</th>
                   		<th>CÓDIGO</th>
                   		<th>SITIO AUDITADO</th>
                   		<th>FECHA AUDITORIA</th>
                   		<th>ESTADO</th>
+                        <th>EDITAR</th>
+                        <th>ELIMINAR</th>
                 	</tr>
               	</thead>
               	<tbody id="tbody_questionnaires">
@@ -65,7 +70,7 @@
 
 	</div>
 
-	<!-- Modal create questionnaire -->
+	<!-- Modal create evento -->
         <div class="modal fade" id="questionnnaire-create" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -80,6 +85,20 @@
 
                         <form id="frm-create-questionnaire">
                             <table class="form-tbl">
+                                <tr id="group-cbogerente">
+                                    <td>GERENTE</td>
+                                    <td>
+                                        <div class="form-row">
+                                            <div class="form-group col-md-6">
+                                                <select id="cbogerente" class="form-control">
+
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                    </td>
+                                </tr>
+
                                 <tr>
                                     <td>AUDITOR</td>
                                     <td>
@@ -131,7 +150,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>FECHA DE AUDITORIA</td>
+                                    <td>FECHA DE TÉRMINO</td>
                                     <td>
                                         <div class="form-group">
                                             <div class="input-group" date id="datetimepicker7">
@@ -141,6 +160,16 @@
                                                 </span>
                                             </div>
                                         </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>INFORME PRELIMINAR</td>
+                                    <td>
+                                       
+                                            <div class="input-group">
+                                                 <input type="checkbox" name="ver_total" id="ver_total"> Ver total
+                                            </div>
+                                        
                                     </td>
                                 </tr>
                             </table>
@@ -154,6 +183,73 @@
             </div>
         </div>
 
+            <!-- Modal Actualizar evento -->
+        <div class="modal fade" id="edit-event" tabindex="-1" role="dialog" aria-labelledby="edit-eventModal" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="edit-eventModal">Actualizar Evento # <span id="idEvent"></span></h3>
+                    </div>
+                    <div class="modal-body">
+                        <div id="edit-message"></div>
+
+                        <form id="frm-edit-event">
+                            <table class="form-tbl">
+                                <tr>
+                                    <td>AUDITOR</td>
+                                    <td>      
+                                        <div class="form-group">
+                                            <select id="cboauditorr" class="form-control">
+                                            </select>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>FECHA DE INICIO</td>
+                                    <td>      
+                                        <div class="form-group">
+                                            <div class="input-group date" id="datetimepicker66">
+                                                <input type="text" class="form-control" id="datepk66" />
+                                                <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>FECHA DE TÉRMINO</td>
+                                    <td>
+                                        <div class="form-group">
+                                            <div class="input-group" date id="datetimepicker77">
+                                                <input type="text" class="form-control" id="datepk77" />
+                                                <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-calendar"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>INFORME PRELIMINAR</td>
+                                    <td>
+                                       
+                                            <div class="input-group">
+                                                 <input type="checkbox" name="ver_totall" id="ver_totall"> Ver total
+                                            </div>
+                                        
+                                    </td>
+                                </tr>
+                            </table>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="updateEvento();"><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true" ></span> Actualizar Evento</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span> Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         
 
 	<script src="js/jquery-1.12.4.min.js"></script>
@@ -166,7 +262,8 @@
 		$(document).ready(function(){
 			setSessionData();
 
-			getEventos();
+			getEventos(user_privileges);
+            getCombos(user_privileges);
 
             setMenu('', '', '', '', '', '', ' class="active"');
 
@@ -180,12 +277,15 @@
                useCurrent: false, //Important! See issue #1075
                format: 'YYYY-MM-DD'
             });
-            $("#datetimepicker6").on("dp.change", function (e) {
-                $('#datetimepicker7').data("DateTimePicker");
+            
+            $('#datetimepicker66').datetimepicker({
+                format: 'YYYY-MM-DD'
             });
-            $("#datetimepicker7").on("dp.change", function (e) {
-                $('#datetimepicker6').data("DateTimePicker");
+            $('#datetimepicker77').datetimepicker({
+               useCurrent: false, //Important! See issue #1075
+               format: 'YYYY-MM-DD'
             });
+
 
 		});
 	</script>

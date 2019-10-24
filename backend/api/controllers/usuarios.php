@@ -603,7 +603,7 @@ $app->get('/v1/users/get-companies-for-auditors/{auditor_id}', function($auditor
 		->from('r_gerentes_auditores', 'rga')
 		->leftJoin('rga', 'r_gerentes_empresas', 'rge', 'rge.id_gerente = rga.id_gerente')
 		->leftJoin('rge', 'empresas', 'e', 'e.id_empresa = rge.id_empresa')
-		->where('rga.id_auditor = ?');
+		->where('rga.id_auditor = ? group by e.id_empresa');
 	$stmt = $app['db']->prepare($sql);
 	$stmt->bindValue(1, $auditor_id);
 	$stmt->execute();

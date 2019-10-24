@@ -73,7 +73,7 @@ canvas {
 			<button type="button" class="btn btn-default" onclick="javascript:history.back();"><span class="glyphicon glyphicon-chevron-left"></span> Regresar</button>
   			<button type="button" class="btn btn-primary" aria-label="Left Align" onclick="completeQuestionnaire('complete');" id="finalizar-cuest" disabled><span class="glyphicon glyphicon-floppy-saved" aria-hidden="true"></span> Finalizar Cuestionario</button>
   			<button type="button" class="btn btn-success" aria-label="Left Align" onclick="informeQuestionnaire('complete');" id="informe-cuest" disabled><span class="glyphicon glyphicon-thumbs-up" aria-hidden="true"></span> Generar Informe Preliminar</button>
-		    <button class="btn btn-default" onclick="viewInform();" id="viewReportPr"><span class="glyphicon glyphicon-eye-open"></span> Ver Informe Preliminar</button>
+<!--		    <button class="btn btn-default" onclick="viewInform();" id="viewReportPr"><span class="glyphicon glyphicon-eye-open"></span> Ver Informe Preliminar</button> -->
         </div>
 
 		<form id="formAuditoria">
@@ -83,8 +83,8 @@ canvas {
 			      <input type="text" class="form-control" id="inputAtendio" disabled>
 			    </div>
 				
-				<label for="datetimepicker6" class="col-sm-2 col-form-label">Inicio de auditoría:</label>
-				<div class='col-md-3'>
+				<label for="datetimepicker6" class="col-sm-3 col-form-label">Hora que inicia auditoría:</label>
+				<div class='col-md-2'>
 			        <div class="form-group">
 			            <div class="input-group date" id="datetimepicker6">
 			                <input type="text" class="form-control" id="datepk6" disabled />
@@ -97,8 +97,8 @@ canvas {
 
                 <div class="col-sm-6"></div>
 
-			    <label for="datetimepicker7" class="col-sm-2 col-form-label">Término de auditoría:</label>
-			    <div class='col-md-3'>
+			    <label for="datetimepicker7" class="col-sm-3 col-form-label">Hora que finaliza auditoría:</label>
+			    <div class='col-md-2'>
 			        <div class="form-group">
 			            <div class="input-group" date id="datetimepicker7">
 			                <input type="text" class="form-control" id="datepk7" disabled />
@@ -190,18 +190,11 @@ canvas {
 
 			//Calendarios
 			$('#datetimepicker6').datetimepicker({
-                format: 'YYYY-MM-DD HH:mm:ss'
+                format: "HH:mm:ss"
             });
 	        $('#datetimepicker7').datetimepicker({
-	           useCurrent: false, //Important! See issue #1075
-	           format: 'YYYY-MM-DD HH:mm:ss'
+                format: "HH:mm:ss"
             });
-	        $("#datetimepicker6").on("dp.change", function (e) {
-	            $('#datetimepicker7').data("DateTimePicker").minDate(e.date);
-	        });
-	        $("#datetimepicker7").on("dp.change", function (e) {
-	            $('#datetimepicker6').data("DateTimePicker").maxDate(e.date);
-	        });
 
 		});
 

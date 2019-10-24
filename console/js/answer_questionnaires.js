@@ -1,7 +1,8 @@
 
-
-var finalizar = 1;
-var botones_guardar = 1;
+var inf_generado = 0;
+var finalizado = 1;
+var completado = 1;
+var botones_guardar = 0;
 
 //Get status informe preliminar
 var getInforme = function(){
@@ -10,27 +11,27 @@ var getInforme = function(){
 		url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/get-informe/'+localStorage.getItem('questionnaire_respondido_id'),
 		dataType: 'json',
 		success: function(response){
-			
+			//console.log(response);
+			finalizado = response.finalizado; 
 
 			if (response.informe_preliminar == 1) {
+				inf_generado =1;
 				$("#informe-cuest").hide();
 				$("#formAuditoria").hide();
-				document.getElementById("finalizar-cuest").disabled = false;
-				botones_guardar =0;
-								//Ya se finalizó el cuestionario
-				if (response.finalizado == 1) {
-					document.getElementById("finalizar-cuest").disabled = true;
-				}else{
-					document.getElementById("finalizar-cuest").disabled = false;
-					
-				}
+				//document.getElementById("finalizar-cuest").disabled = false;
 
+			}
+			
+			if (response.finalizado ==1) {
+				botones_guardar=1;
 			}else{
-				$("#viewReportPr").hide();
+				botones_guardar=0;
 			}
 
-			
 
+			/*else{
+				$("#viewReportPr").hide();
+			}*/
 		},
 		error: function(error){
 			console.log('Ha ocurrido un error: ' + error);
@@ -69,11 +70,11 @@ var getQuestions = function(){
 
 				if (res_avance >= 0 && res_avance <= 39) {
 					progresp = "progress-bar-danger";
-					finalizar = 0;
+					completado = 0;
 				}
 				if (res_avance >= 40 && res_avance <= 99 ) {
 					progresp = "progress-bar-warning";
-					finalizar = 0;
+					completado = 0;
 				}
 				if (res_avance==100) {
 					progresp = "progress-bar-success";
@@ -178,7 +179,7 @@ var getQuestions = function(){
 					}
 					html += '<hr></div>';
 				}
-				if (botones_guardar == 1) {
+				if (botones_guardar == 0) {
 					html +='<button type="button" class="btn btn-info pull-right saveQuestionnaire" name="'+idSeccionPreg+'" style="margin:0px 0px 12px 0"><span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Guardar Avance</button>';				
 				}
 
@@ -266,9 +267,32 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 
 	
 	setTimeout(function(){
+		document.getElementById("informe-cuest").disabled = false;
+		document.getElementById("inputAtendio").disabled = false;
+		document.getElementById("datepk6").disabled = false;
+		document.getElementById("datepk7").disabled = false;
+		$("#pizarra").show();
+		$("#pizarra2").show();
+		$("#piza").show();
+        $("#piza2").show();
+        
 
-		if(finalizar == 1) {
-			document.getElementById("informe-cuest").disabled = false;
+        console.log("cuestionario completado" + completado);
+		console.log("informe generado" + inf_generado);
+		console.log("finalizado" + finalizado);
+
+
+
+		//SI ya fue completado el cuestionario
+		if(completado == 0) {
+			document.getElementById("finalizar-cuest").disabled = true;
+											//Ya se finalizó el cuestionario
+			//if (response.finalizado == 1) {
+			//		document.getElementById("finalizar-cuest").disabled = true;
+			//	}else{
+			//		document.getElementById("finalizar-cuest").disabled = false;		
+			//	}
+		/*	document.getElementById("informe-cuest").disabled = false;
 			document.getElementById("inputAtendio").disabled = false;
 			document.getElementById("datepk6").disabled = false;
 			document.getElementById("datepk7").disabled = false;
@@ -276,24 +300,36 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 			$("#pizarra2").show();
 			$("#piza").show();
             $("#piza2").show();
-			
+		*/	
 		}else{
-			document.getElementById("informe-cuest").disabled = true;
+			document.getElementById("finalizar-cuest").disabled = false;
+		/*	document.getElementById("informe-cuest").disabled = true;
 			document.getElementById("inputAtendio").disabled = true;
 			document.getElementById("datepk6").disabled = true;
 			document.getElementById("datepk7").disabled = true;
+		*/}
+
+		//Si ya fue completado y el informe generado
+		if (completado ==1 && inf_generado ==1) {
+			document.getElementById("finalizar-cuest").disabled = false;
 		}
+
+		//Si ya fue completado y el informe generado
+		if (finalizado ==1) {
+			document.getElementById("finalizar-cuest").disabled = true;
+		}
+		
+
 	}, 2000);
-
 	
 	
-
-	var viewInform = function(){
-		location.href = 'informe.html';
-	}
 
 	var informeQuestionnaire = function(){
-		var atiende = document.getElementById("inputAtendio").value;
+
+		var confirmElim = confirm('Advertencia, el informe preliminar se genera con la información de las no conformidades ingresadas en este momento, una vez creado no podrá editarse, ¿desea generar el informe preliminar ?');
+		if (confirmElim == true){
+			
+			var atiende = document.getElementById("inputAtendio").value;
 		var dateInicia = document.getElementById("datepk6").value;
 		var dateTermina = document.getElementById("datepk7").value;		
 
@@ -308,6 +344,9 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 			//console.log("Is OK");
 			var params = {id_cuestionario_respondido: localStorage.getItem('questionnaire_respondido_id'), atiende: atiende,firma: img.src, firma2: img2.src,dateInicia: dateInicia, dateTermina: dateTermina};
 			//console.log(JSON.stringify(params));
+			//console.log(localStorage.getItem('questionnaire_respondido_id'));
+			
+			
 			$.ajax({
 				url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/create-informe',
 				method: 'POST',
@@ -316,8 +355,32 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 				success: function(response){
 
 					if (response.result_code == 1) {
-						alert(response.message);
-						location.reload();
+
+						$.ajax({
+							url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/get-cuestionario-respondido/'+localStorage.getItem('questionnaire_respondido_id'),
+							dataType: 'json',
+							success: function(response){
+								//console.log(response);
+
+
+								if (response === true) {									
+									alert("Registro actualizado corectamente");
+								
+									//location.href = 'questionnaires-assigned.html';
+									window.location.assign("https://dev.bluehand.com.mx/console/questionnaires-assigned.html");
+
+
+								}else{
+									alert("Error al intentar actualizadar");
+								}
+							},
+							error: function(error){
+								console.log(error);
+							}
+
+
+						});
+
 					}else{
 						alert(response.message);
 					}
@@ -327,9 +390,12 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 				}
 			});
 
-
 		}else{
 			alert("Responder datos de Auditoria para continuar.");
+		}
+		} 
+		else{
+			alert("Operación cancelada !");
 		}
 
 	}
@@ -337,12 +403,11 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 	var completeQuestionnaire = function(){
 
 		
-
-		var params = {id_cuestionario_respondido: localStorage.getItem('questionnaire_respondido_id')};
-	
-		//console.log(JSON.stringify(params));
-
-		$.ajax({
+		var confirmElim = confirm('Advertencia, una vez finalizado el reporte, no podrá editarse o guardar cambios nuevamente, ¿desea finalizar el cuestionario?');
+		if (confirmElim == true){
+			var params = {id_cuestionario_respondido: localStorage.getItem('questionnaire_respondido_id')};
+			//console.log(JSON.stringify(params));
+			$.ajax({
 				url: 'https://dev.bluehand.com.mx/backend/api/v1/questionnaire/finaliza-cuestionary',
 				method: 'POST',
 				dataType: 'json',
@@ -357,13 +422,16 @@ $('#answer_questionnaire_questions').on("click", ".saveQuestionnaire",function()
 					}
 
 					//console.log(localStorage);				
-					window.location.href = 'questionnaires-answer.html';
+					//window.location.href = 'questionnaires-answer.html';
+					window.location.assign("https://dev.bluehand.com.mx/console/questionnaires-assigned.html");
 				},
 				error: function(error){
 					console.log(error);
 				}
 			});
-	
+		}else{
+			alert("Operación cancelada !");
+		}
 
 	}
 

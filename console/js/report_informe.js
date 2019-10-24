@@ -11,11 +11,7 @@ if($('#hdn_report_id').val() != ""){
 	//console.log('2 ' + answered_questionnaire_id);
 }
 
-var viewInform = function(){
-	localStorage.getItem('questionnaire_respondido_id');
-	location.href = 'informe.html';
-}
-
+console.log("nDATO" + answered_questionnaire_id);
 
 var getGeneralData = function(){
 	// Validating user privileges
@@ -35,7 +31,6 @@ var getGeneralData = function(){
 		url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/general-data/'+answered_questionnaire_id,
 		dataType: 'json',
 		success: function(response){
-
 			$('#sp_report_number').html(answered_questionnaire_id);
 			$('#sp_client').html(response.client);
 			$('#sp_branch').html(response.branch);
@@ -46,11 +41,6 @@ var getGeneralData = function(){
 			$('#end_date').html(response.end_date+' '+response.end_time);
 			$('#txt_audit_date').val(response.audit_date);
 			$('#hdn_report_id_date').val(response.report_id);
-			$("#txt_res_audit").text(response.audit_atiende);
-			$("#imag_firma").attr("src", response.firma);
-			$("#imag_firma2").attr("src", response.firma2);
-
-			manageReportActions(response.process_report);
 		},
 		error: function(error){
 			console.log('Ha ocurrido un error: ' + error);
@@ -98,10 +88,8 @@ var getResultsBySection = function(show_chart){
 						response[i].got_value = 0;
 					}
 					
-					labels.push(response[i]['section']);
-					//labels.push(section_number);
-					//console.log(utf8_encode());
-
+					//labels.push(response[i].section);
+					labels.push(section_number);
 					chart_data.push(response[i].score);
 					total_percentage += parseFloat(response[i].score);
 					max_score += parseInt(response[i].value);
@@ -125,9 +113,8 @@ var getResultsBySection = function(show_chart){
 					section_percentage = (response[i].score == null) ? 'NA' : parseFloat(response[i].score).toFixed(1) + ' %';
 
 					sections_html += '<tr>';
-					sections_html += '<td style="text-align:center;">'+section_number+'</td>';
-					sections_html += '<td colspan="2">'+response[i].section+'</td>';
-					sections_html += '<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>';
+					sections_html += '<td>'+section_number+'</td>';
+					sections_html += '<td>'+response[i].section+'</td>';
 					sections_html += '<td class="'+color_class+'">'+section_percentage+' </td>';
 					sections_html += '</tr>';
 
@@ -157,14 +144,9 @@ var getResultsBySection = function(show_chart){
 
 				
 				if(show_chart == 1){
-//					console.log("entra a la grafica");
-//					console.log(chart_data);
-//					console.log(labels);
 
-
-					
 					var chart = new Chart(ctx, {
-				    	type: 'horizontalBar',
+				    	type: 'bar',
 				    	data: {
 				        	labels: labels,
 				        	datasets: [{
@@ -177,25 +159,10 @@ var getResultsBySection = function(show_chart){
 				    	options: {
 				    		scales: {
 				            	yAxes: [{
-				            		gridLines: {
-								        color: "black",
-								        borderDash: [2, 5],
-								      },
 				                	ticks: {
-				                		//callback: function(value, index, values) {
-					                    //    return value + '%';
-					                    //},
 				                    	beginAtZero:true
 				                	}
-				            	}],
-				            	xAxes: [{
-							                ticks: {
-												callback: function(value, index, values) {
-												    return value + '%';
-												},
-							                    autoSkip: false
-							                }
-							    }]
+				            	}]
 				        	},
 				        	responsive: true
 				    	}
@@ -210,8 +177,7 @@ var getResultsBySection = function(show_chart){
 
 	}, 1000);
 
-				
-
+	
 
 }
 
@@ -219,8 +185,9 @@ var getOpportunityAreas = function(){
 	var user_privileges = localStorage.getItem('audit-suite-privilege-user');
 	var user_reviser = localStorage.getItem('audit-suite-user-reviser');
 
+	console.log(answered_questionnaire_id);
 	$.ajax({
-		url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/opportunity-areas/'+answered_questionnaire_id,
+		url: 'https://dev.bluehand.com.mx/backend/api/v1/reports/opportunity-areas-informe/'+answered_questionnaire_id,
 		dataType: 'json',
 		success: function(response){
 			var html = '';
@@ -294,63 +261,33 @@ var getReportQuestions = function(){
 			var class_row = '';
 
 			for(var i=0; i<response.length; i++){
-				//question = response[i];
-			
-				//console.log(response[i]);
+				question = response[i];
+
 				if(i % 2 == 0){
 					class_row = ' class="table-active"';
 				}else{
 					class_row = '';
 				}
 
-				
-				html += '<tr><td colspan="5" style="text-align:center;"><b>SECCIÓN '+ response[i].seccion_id + ' ' + response[i].seccion_name+'</b></td></tr>';
+				html += '<tr'+class_row+'>';
+				html += '<td>'+question.section+'</td>';
+				html += '<td>'+question.question+'</td>';
+				html += '<td>'+question.selected_option+'</td>';
+				html += '<td>'+question.value+'</td>';
 
-				
-				//console.log(response[i].objeto.length);
-				for (var j = 0; j < response[i].objeto.length; j++) {
-					//Things[i]
-					//console.log(response[i].objeto[j]['question']);
-					html += '<tr>';
-					html += '<td><b>PREGUNTA ' + response[i].objeto[j]['id_section'] + '.' +response[i].objeto[j]['num_pregunta']+ '</b></td>';
-					html += '<td>'+response[i].objeto[j]['question']+'</td>';
-					html += '<td>'+response[i].objeto[j]['selected_option']+'</td>';
-					html += '<td>'+response[i].objeto[j]['value']+'</td>';
-					
-					if(user_privileges == 1){
-						html += '<td class="print-hide"><button type="button" class="btn btn-primary" onclick="openEditAnswer('+response[i].objeto[j]['answer_id']+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
-					}else if(user_privileges == 2 && user_reviser == 1){
-						html += '<td class="print-hide"><button type="button" class="btn btn-primary" onclick="openEditAnswer('+response[i].objeto[j]['answer_id']+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
-					}else if(user_privileges == 2 && user_reviser == 0){
-						html += '<td class="print-hide"><button type="button" class="btn btn-primary" onclick="openEditAnswer('+response[i].objeto[j]['answer_id']+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
-					}else{
-						html += '<td class="print-hide"><button disabled type="button" class="btn btn-primary" onclick="openEditAnswer('+response[i].objeto[j]['answer_id']+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
-					}
-
-					html += '</tr>';
-
-					html += '<tr'+class_row+'>';
-
-					html += '<td><b>AYUDA</b></td>';
-					html += '<td colspan="3">'+response[i].objeto[j]['help_text']+'</td>';
-					html += '<td class="print-hide"></td>';
-					html += '</tr>';
-
-					html += '<tr'+class_row+'>';
-					html += '<td><b>OBSERVACIONES</b></td>';
-					html += '<td colspan="3">'+response[i].objeto[j]['observations']+'</td>';
-					html += '<td class="print-hide"></td>';
-					html += '</tr>';
-
-					html += '<tr'+class_row+'>';
-					html += '<td><b>NO CONFORMIDAD</b></td>';
-					html += '<td colspan="3">'+response[i].objeto[j]['nonconformity']+'</td>';
-					html += '<td class="print-hide"></td>';
-					html += '</tr>';
-
+				if(user_privileges == 1){
+					html += '<td class="print-hide"><button type="button" class="btn btn-primary" onclick="openEditAnswer('+question.answer_id+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
+				}else if(user_privileges == 2 && user_reviser == 1){
+					html += '<td class="print-hide"><button type="button" class="btn btn-primary" onclick="openEditAnswer('+question.answer_id+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
+				}else if(user_privileges == 2 && user_reviser == 0){
+					html += '<td class="print-hide"><button type="button" class="btn btn-primary" onclick="openEditAnswer('+question.answer_id+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
+				}else{
+					html += '<td class="print-hide"><button disabled type="button" class="btn btn-primary" onclick="openEditAnswer('+question.answer_id+');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></td>';	
 				}
+				
+				html += '</tr>';
 
-				/*html += '<tr'+class_row+'>';
+				html += '<tr'+class_row+'>';
 				html += '<td><b>AYUDA</b></td>';
 				html += '<td colspan="3">'+question.help_text+'</td>';
 				html += '<td class="print-hide"></td>';
@@ -366,8 +303,15 @@ var getReportQuestions = function(){
 				html += '<td><b>NO CONFORMIDAD</b></td>';
 				html += '<td colspan="3">'+question.nonconformity+'</td>';
 				html += '<td class="print-hide"></td>';
-				html += '</tr>';*/
+				html += '</tr>';
 
+				/*html += '<tr>';
+				html += '<td>'+question.section+'</td>';
+				html += '<td>'+question.question+'</td>';
+				html += '<td>'+question.selected_option+'</td>';
+				html += '<td>'+question.value+'</td>';
+				html += '<td>'+question.observations+'</td>';
+				html += '</tr>';*/
 			}
 
 			$('#tbody_report_questions').html(html);
@@ -571,7 +515,7 @@ var reportOpened = function(){
 }
 
 
-var manageReportActions = function(process_report){
+var manageReportActions = function(){
 	var user_privileges = localStorage.getItem('audit-suite-privilege-user');
 	var user_reviser = localStorage.getItem('audit-suite-user-reviser');
 	var user_regional = localStorage.getItem('audit-suite-user-regional');
@@ -579,91 +523,11 @@ var manageReportActions = function(process_report){
 	var btn_approve = $('#btn_approves');
 	var btn_release = $('#btn_release_report');
 
-	console.log("revisor" + user_reviser);
-	console.log("regional" + user_regional);
-	console.log("proceso de reporte" + process_report);
-	console.log("privilegios" + user_privileges);	
-	
-	
-	//Cualquier usuario que no tiene asignado un rol adicional, no es revisor ni aprobador, ni liberador y no es administradpr
-	if (user_reviser == 0 && user_regional == 0 && user_privileges != 1) {
-		btn_review.attr('disabled', 'disabled');
-		btn_approve.attr('disabled', 'disabled');
-		btn_release.attr('disabled', 'disabled');
-	}
-
-	//Reportes sin revisiones, aprobados ni liberados 
-	if (process_report == 0) { 
-		if (user_reviser == 1 || user_privileges == 1) { //usuario revisor cuando no se ha inicio un proceso y es administrador
-			btn_review.attr('disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-		
-		if (user_regional == 1) { //usuario regional cuando no se ha iniciado el proceso
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-	}
-
-	//reporte revisado
-	if (process_report == 1){
-		if (user_reviser == 1) { //usuario revisort no puede hacer nada cuando abre un reporte con proceso revisado
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-		if (user_regional == 1  || user_privileges == 1) { //usuario regional cuando se reviso, puede aprobar tambien si es administrador 
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-	}
-
-	//reporte aprobado
-	if (process_report == 2){
-		if (user_regional == 1) { //usuario revisor no puede hacer nada cuando abre un reporte con proceso aprobado
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-		
-		if (user_reviser == 1 || user_privileges == 1) { //usuario regional cuando se aprobo, puede liberar tambien si es administrador
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled');
-		}		
-	}
-
-	//reporte liberado
-	if (process_report == 3){
-		if (user_reviser == 1) { //usuario revisor no puede hacer nada cuando abre un reporte con proceso aprobado y porque ya está liberado
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-		if (user_regional == 1) { //usuario regional no puede hacer nada porque ya está liberado
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-		if (user_privileges == 1) { //usuario regional no puede hacer nada porque ya está liberado
-			btn_review.attr('disabled', 'disabled');
-			btn_approve.attr('disabled', 'disabled');
-			btn_release.attr('disabled', 'disabled');
-		}
-		
-	}
-
-
-	/*
 	if(user_privileges == 1){
 		btn_review.removeAttr('disabled');
 		btn_approve.removeAttr('disabled');
 		btn_release.removeAttr('disabled');
-	}
-	else if(user_privileges == 2){
+	}else if(user_privileges == 2){
 		if(user_reviser == 1 && user_regional == 0){
 			btn_review.removeAttr('disabled');
 			btn_approve.attr('disabled', 'disabled');
@@ -681,13 +545,8 @@ var manageReportActions = function(process_report){
 		btn_review.attr('disabled', 'disabled');
 		btn_approve.attr('disabled', 'disabled');
 		btn_release.attr('disabled', 'disabled');
-	}*/
+	}
 }
-
-
-//reviewReport revisado
-//approveReport aprobado
-//releaseReport liberado
 
 
 var reviewReport = function(){
@@ -696,7 +555,6 @@ var reviewReport = function(){
 		dataType: 'json',
 		success: function(response){
 			alert(response.message);
-			location.reload();
 		},
 		error: function(error){
 			console.log(error);
@@ -728,7 +586,6 @@ var approveReport = function(){
 		dataType: 'json',
 		success: function(response){
 			alert(response.message);
-			location.reload();
 		},
 		error: function(error){
 			console.log(error);
@@ -762,7 +619,6 @@ var releaseReport = function(){
 			data: 'json',
 			success: function(response){
 				alert(response.message);
-				location.reload();
 			},
 			error: function(error){
 				console.log(error);
@@ -788,6 +644,66 @@ var sendReleaseNotification = function(report_id){
 	});
 }
 
+// SHC
+var exportToPDF = function(){
+
+	var pdfContent = document.getElementById('pdf-content');
+	pdfContent = pdfContent.cloneNode(true);
+
+	var canvas = document.getElementById('results-by-section');
+
+	// Create new canvas with white background
+	var canvasWhite = document.createElement("canvas");
+	canvasWhite.width = canvas.width; 
+	canvasWhite.height = canvas.height;
+	var ctx = canvasWhite.getContext('2d');
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(0,0,canvas.width,canvas.height);
+	ctx.drawImage(canvas, 0, 0);
+
+	// Create img with canvas content
+	var img = document.createElement("img");
+	img.setAttribute("src", canvasWhite.toDataURL());
+	img.setAttribute("width", "750");
+	img.setAttribute("height", "530");
+
+	// Add img to pdfContent
+	pdfContent.querySelector("#canvas-panel").appendChild(img);
+
+	// Add audit date and remove input date element.
+	pdfContent.querySelector("#td-audit-date").innerHTML = $('#txt_audit_date').val();
+
+	// Remove canvas element
+	pdfContent.querySelector("#results-by-section").remove();
+
+	var collapse1 = pdfContent.querySelector("#collapse1");
+
+	if(!collapse1.classList.contains('in')){
+		collapse1.classList.add('in');
+	}
+
+	var collapse2 = pdfContent.querySelector("#collapse2");
+	
+	if(!collapse2.classList.contains('in')){
+		collapse2.classList.add('in');
+	}
+
+	var reportNo = pdfContent.querySelector("#sp_report_number").innerHTML;
+
+	var html = '<!DOCTYPE HTML>';
+	html += '<html>';
+	html += '<head>	<title>Reporte_No_'+reportNo+'</title>';
+	html += '<link href="css/questionnaires.css" rel="stylesheet">';
+	html += '<link href="css/bootstrap.css" rel="stylesheet">';
+	html += '</head>';
+	html += '<body>';
+	html += pdfContent.outerHTML;
+	html += '<script> setTimeout( function(){ window.print(); },1000); </script>';
+	html += '</body></html>';
+	
+	var w = window.open('','_blank');
+	w.document.write(html);
+}
 
 
 var saveReportData = function(){

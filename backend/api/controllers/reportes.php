@@ -6,8 +6,33 @@ use Symfony\Component\HttpFoundation\Request;
 // This controller gets the answered questionnaire data of a client and auditor
 $app->get('/v1/reports/general-data/{answered_questionnaire_id}', function($answered_questionnaire_id) use ($app){
 
+
+//fecha_inicia_auditoria, fecha_termina_auditoria, hora_inicio, hora_finalizacion
+
 	$sql = $app['db']->createQueryBuilder();
 	$sql
+		->select('(SELECT e.nombre_comercial FROM empresas AS e LEFT JOIN r_clientes_plantas_proveedores AS rcpp 
+ ON rcpp.id_empresa = e.id_empresa WHERE rcpp.id_planta_proveedor = cr.id_cliente) AS client,
+					cr.id_cuestionario_respondido AS report_id,
+					e.nombre_comercial AS branch,
+					cr.liberado AS process_report, 
+					c.codigo AS questionnaire_code, 
+					c.nombre AS questionnaire_name, 
+					CONCAT(u.nombre,\' \',u.apellido_paterno,\' \',u.apellido_materno) AS auditor, 
+					cr.hora_inicio AS start_time, 
+					cr.fecha_inicia_auditoria AS start_date,
+					cr.auditor_atiende AS audit_atiende,
+					cr.hora_finalizacion AS end_time, 
+					cr.firma AS firma,
+					cr.firma_auditor AS firma2,
+					cr.fecha_termina_auditoria AS end_date,
+					cr.fecha_auditoria AS audit_date')
+		->from('cuestionarios_respondidos', 'cr')
+		->leftJoin('cr', 'empresas', 'e', 'e.id_empresa = cr.id_cliente')
+		->leftJoin('cr', 'cuestionarios', 'c', 'c.id_cuestionario = cr.id_cuestionario')
+		->leftJoin('cr', 'usuarios', 'u', 'u.id_usuario = cr.id_auditor')
+		->where('cr.id_cuestionario_respondido = ?');
+	/*$sql
 		->select('(SELECT e.nombre_comercial FROM empresas AS e LEFT JOIN r_clientes_plantas_proveedores AS rcpp 
  ON rcpp.id_empresa = e.id_empresa WHERE rcpp.id_planta_proveedor = cr.id_cliente) AS client,
 					cr.id_cuestionario_respondido AS report_id,
@@ -24,7 +49,7 @@ $app->get('/v1/reports/general-data/{answered_questionnaire_id}', function($answ
 		->leftJoin('cr', 'empresas', 'e', 'e.id_empresa = cr.id_cliente')
 		->leftJoin('cr', 'cuestionarios', 'c', 'c.id_cuestionario = cr.id_cuestionario')
 		->leftJoin('cr', 'usuarios', 'u', 'u.id_usuario = cr.id_auditor')
-		->where('cr.id_cuestionario_respondido = ?');
+		->where('cr.id_cuestionario_respondido = ?'); */
 	$stmt = $app['db']->prepare($sql);
 	$stmt->bindValue(1, $answered_questionnaire_id);
 	$stmt->execute();
@@ -199,6 +224,30 @@ $app->get('/v1/reports/percentage-by-section-chart/{answered_questionnaire_id}',
 });
 
 
+// This controller gets the question where the client did not get the 100% en informe preliminar
+$app->get('/v1/reports/opportunity-areas-informe/{answered_questionnaire_id}', function($answered_questionnaire_id) use ($app){
+
+	$sql = $app['db']->createQueryBuilder();
+	$sql
+		->select('rc.id_respuesta AS answer_id, sc.nombre_seccion AS section, p.pregunta AS question, p.texto_ayuda AS help_text, rop.opcion AS selected_option, rc.valor AS value, rc.observaciones_auditor AS observations, rc.no_conformidad AS nonconformity')
+		->from('informe_preliminar', 'rc')
+		->leftJoin('rc', 'r_opciones_preguntas', 'rop', 'rop.id_opcion = rc.id_opcion')
+		->leftJoin('rc', 'preguntas', 'p', 'p.id_pregunta = rc.id_pregunta')
+		->leftJoin('p', 'secciones_cuestionario', 'sc', 'sc.id_seccion = p.id_seccion')
+		->where('rc.id_cuestionario_respondido = ?')
+		->andWhere('rc.valor < 100');
+	$stmt = $app['db']->prepare($sql);
+	$stmt->bindValue(1, $answered_questionnaire_id);
+	$stmt->execute();
+	$wrong_questions = $stmt->fetchAll();
+
+	return $app->json($wrong_questions);
+
+
+});
+
+
+
 // This controller gets the question where the client did not get the 100%
 $app->get('/v1/reports/opportunity-areas/{answered_questionnaire_id}', function($answered_questionnaire_id) use ($app){
 
@@ -224,19 +273,81 @@ $app->get('/v1/reports/opportunity-areas/{answered_questionnaire_id}', function(
 $app->get('/v1/reports/questions/{answered_questionnaire_id}', function($answered_questionnaire_id) use ($app){
 
 	$sql = $app['db']->createQueryBuilder();
-	$sql
-		->select('rc.id_respuesta AS answer_id, sc.nombre_seccion AS section, p.pregunta AS question, p.texto_ayuda AS help_text, rop.opcion AS selected_option, rc.valor AS value, rc.observaciones_auditor AS observations, rc.no_conformidad AS nonconformity')
-		->from('respuestas_cuestionarios', 'rc')
-		->leftJoin('rc', 'r_opciones_preguntas', 'rop', 'rop.id_opcion = rc.id_opcion')
-		->leftJoin('rc', 'preguntas', 'p', 'p.id_pregunta = rc.id_pregunta')
-		->leftJoin('p', 'secciones_cuestionario', 'sc', 'sc.id_seccion = p.id_seccion')
-		->where('rc.id_cuestionario_respondido = ?');
+	$sql='select rc.id_respuesta AS answer_id, sc.nombre_seccion AS section,sc.id_seccion AS id_section 
+from respuestas_cuestionarios AS  rc
+left join r_opciones_preguntas AS rop on rop.id_opcion = rc.id_opcion
+left join preguntas AS p on p.id_pregunta = rc.id_pregunta
+left join secciones_cuestionario AS sc on sc.id_seccion = p.id_seccion
+where rc.id_cuestionario_respondido = ? group by id_section order by id_section asc';
 	$stmt = $app['db']->prepare($sql);
 	$stmt->bindValue(1, $answered_questionnaire_id);
 	$stmt->execute();
-	$wrong_questions = $stmt->fetchAll();
 
-	return $app->json($wrong_questions);
+	$secciones =$stmt->fetchAll();
+
+	for ($i=0; $i < count($secciones); $i++) { 
+
+		$sql2 = $app['db']->createQueryBuilder();
+		$sql2 ='select rc.id_respuesta AS answer_id, sc.nombre_seccion AS section,sc.id_seccion AS id_section, p.pregunta AS question, p.texto_ayuda AS help_text, rop.opcion AS selected_option, rc.valor AS value, rc.observaciones_auditor AS observations, rc.no_conformidad AS nonconformity, p.num_pregunta 
+	from respuestas_cuestionarios AS  rc
+	left join r_opciones_preguntas AS rop on rop.id_opcion = rc.id_opcion
+	left join preguntas AS p on p.id_pregunta = rc.id_pregunta
+	left join secciones_cuestionario AS sc on sc.id_seccion = p.id_seccion
+	where rc.id_cuestionario_respondido = '.$answered_questionnaire_id.' and sc.id_seccion ='.$secciones[$i]['id_section'];
+		$stmt2 = $app['db']->prepare($sql2);
+		$stmt2->execute();
+
+		$respuestas2 =$stmt2->fetchAll();
+		$response[$i] = array('seccion_name' => $respuestas2[$i]['section'],
+				'seccion_id' => $respuestas2[$i]['id_section'],
+				'objeto' => $respuestas2,
+		);
+			/*$response[$i] = array(
+				'section' => $respuestas2[$i]['section'],
+					'answer_id' => $respuestas2[$i]['answer_id'],
+				'id_section' => $respuestas2[$i]['id_section'],
+				'question' => $respuestas2[$i]['question'],
+				'help_text' => $respuestas2[$i]['help_text'],
+				'selected_option' => $respuestas2[$i]['selected_option'],
+				'value' => $respuestas2[$i]['value'],
+				'observations' => $respuestas2[$i]['observations'],
+				'nonconformity' => $respuestas2[$i]['nonconformity']						
+			);*/
+	}
+
+	
+	//$wrong_que[$i]  Arreglo que contiene las secciones en orden
+
+
+
+
+//	for ($i=0; $i < count($respuestas2); $i++) {
+		//if ($respuestas2[$i]['id_section'] == $respuestas[$i]['id_section']) {
+			//$wrong_que[$i] = array('seccion' => $respuestas[$i]); // $respuestas2[$i];
+		//}
+		/*
+		} */
+
+
+		/*$response[$i] = array('answer_id' => $respuestas2[$i]['answer_id'],
+						'id_section' => $respuestas2[$i]['id_section'],
+						'question' => $respuestas2[$i]['question'],
+						'help_text' => $respuestas2[$i]['help_text'],
+						'selected_option' => $respuestas2[$i]['selected_option'],
+						'value' => $respuestas2[$i]['value'],
+						'observations' => $respuestas2[$i]['observations'],
+						'nonconformity' => $respuestas2[$i]['nonconformity']						
+					);*/
+//	}
+
+
+
+
+
+
+	return $app->json($response);
+
+
 });
 
 
@@ -304,17 +415,24 @@ $app->get('/v1/reports/get/{user_id}/{user_privileges}', function($user_id, $use
 						LEFT JOIN cuestionarios AS c ON c.id_cuestionario = cr.id_cuestionario
 						LEFT JOIN empresas AS e ON e.id_empresa = cr.id_cliente
 						LEFT JOIN usuarios AS u ON u.id_usuario = cr.id_auditor
-						WHERE cr.id_cliente IN ($ids) AND cr.estado >= 1
+						WHERE cr.id_cliente IN ($ids) AND cr.estado = 1
 						ORDER BY cr.fecha_auditoria ASC"; //AND cr.liberado = 1
 			}else{
 				// Getting the reports that are available for the manager
 				$sql = $app['db']->createQueryBuilder();
-				$sql = "SELECT cr.id_cuestionario_respondido AS report_id, cr.id_cuestionario AS questionnaire_id, c.nombre AS questionnaire_name, c.codigo AS questionnaire_code, cr.id_cliente AS client_id, e.nombre_comercial AS client_name, cr.id_auditor AS auditor_id, CONCAT(u.nombre,' ',u.apellido_paterno) AS auditor_name, cr.fecha_finalizacion AS application_date, cr.fecha_auditoria AS audit_date, cr.liberado AS released, cr.cerrar_replicas AS close_replies
+				/*$sql = "SELECT cr.id_cuestionario_respondido AS report_id, cr.id_cuestionario AS questionnaire_id, c.nombre AS questionnaire_name, c.codigo AS questionnaire_code, cr.id_cliente AS client_id, e.nombre_comercial AS client_name, cr.id_auditor AS auditor_id, CONCAT(u.nombre,' ',u.apellido_paterno) AS auditor_name, cr.fecha_finalizacion AS application_date, cr.fecha_auditoria AS audit_date, cr.liberado AS released, cr.cerrar_replicas AS close_replies
 						FROM cuestionarios_respondidos AS cr
 						LEFT JOIN cuestionarios AS c ON c.id_cuestionario = cr.id_cuestionario
 						LEFT JOIN empresas AS e ON e.id_empresa = cr.id_cliente
 						LEFT JOIN usuarios AS u ON u.id_usuario = cr.id_auditor
 						WHERE cr.id_cliente IN ($ids) AND cr.liberado = 1 AND cr.estado = 2
+						ORDER BY cr.fecha_auditoria ASC";*/
+				$sql = "SELECT cr.id_cuestionario_respondido AS report_id, cr.id_cuestionario AS questionnaire_id, c.nombre AS questionnaire_name, c.codigo AS questionnaire_code, cr.id_cliente AS client_id, e.nombre_comercial AS client_name, cr.id_auditor AS auditor_id, CONCAT(u.nombre,' ',u.apellido_paterno) AS auditor_name, cr.fecha_finalizacion AS application_date, cr.fecha_auditoria AS audit_date, cr.liberado AS released, cr.cerrar_replicas AS close_replies
+						FROM cuestionarios_respondidos AS cr
+						LEFT JOIN cuestionarios AS c ON c.id_cuestionario = cr.id_cuestionario
+						LEFT JOIN empresas AS e ON e.id_empresa = cr.id_cliente
+						LEFT JOIN usuarios AS u ON u.id_usuario = cr.id_auditor
+						WHERE cr.id_cliente IN ($ids) AND cr.liberado = 3 AND cr.estado = 1
 						ORDER BY cr.fecha_auditoria ASC";
 			}
 			
@@ -422,6 +540,12 @@ $app->get('/v1/reports/get/{user_id}/{user_privileges}', function($user_id, $use
 	return $app->json($main_result);
 
 });
+
+
+
+
+
+
 
 
 // This controller generates the report that is sent to the clients
@@ -585,7 +709,7 @@ $app->get('/v1/report/delete/{report_id}', function($report_id) use ($app){
 
 // This controller release a report
 $app->get('/v1/report/release-report/{report_id}', function($report_id) use ($app){
-	$sql_release = "UPDATE cuestionarios_respondidos SET liberado = 1 WHERE id_cuestionario_respondido = ?";
+	$sql_release = "UPDATE cuestionarios_respondidos SET liberado = 3 WHERE id_cuestionario_respondido = ?";
 	$stmt = $app['db']->prepare($sql_release);
 	$stmt->bindValue(1, $report_id);
 	$release = $stmt->execute();
@@ -701,7 +825,7 @@ $app->post('/v1/report/answer/edit', function(Request $request) use ($app){
 // This controller send a report to review
 $app->get('/v1/report/send-to-review/{report_id}', function($report_id) use ($app){
 
-	$sql = "UPDATE cuestionarios_respondidos SET estado = 1 WHERE id_cuestionario_respondido = ?";
+	$sql = "UPDATE cuestionarios_respondidos SET liberado = 1 WHERE id_cuestionario_respondido = ?";
 	$stmt = $app['db']->prepare($sql);
 	$stmt->bindValue(1, $report_id);
 	$update = $stmt->execute();
@@ -726,7 +850,7 @@ $app->get('/v1/report/send-to-review/{report_id}', function($report_id) use ($ap
 // This controller approves a report for release
 $app->get('/v1/report/approves-for-release/{report_id}', function($report_id) use ($app){
 
-	$sql = "UPDATE cuestionarios_respondidos SET estado = 2 WHERE id_cuestionario_respondido = ?";
+	$sql = "UPDATE cuestionarios_respondidos SET liberado = 2 WHERE id_cuestionario_respondido = ?";
 	$stmt = $app['db']->prepare($sql);
 	$stmt->bindValue(1, $report_id);
 	$update = $stmt->execute();

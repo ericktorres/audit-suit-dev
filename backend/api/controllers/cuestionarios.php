@@ -190,6 +190,110 @@ $app->post('/v1/questionnaires/section/create', function(Request $request) use (
 	return $app->json($response);
 });
 
+//Get section of questionnaire2 admin
+// Get sections of a questionnaire
+$app->get('/v1/questionnaires/sections2/get/{questionnaire_id}', function($questionnaire_id) use ($app){
+
+	$sql = $app['db']->createQueryBuilder();
+	$sql
+		->select('s.id_seccion AS id, s.num_seccion AS section_number, s.id_cuestionario AS questionnaire_id, s.nombre_seccion AS name, s.descripcion AS description, s.valor AS value, s.fecha_alta AS creation_date')
+		->from('secciones_cuestionario', 's')
+		->where('s.id_cuestionario = ?')
+		->orderBy('s.num_seccion', 'ASC');
+	$stmt = $app['db']->prepare($sql);
+	$stmt->bindValue(1, $questionnaire_id);
+	$stmt->execute();
+	$sections = $stmt->fetchAll();
+
+	$result = array();
+
+	// Getting questions of each section
+	for($i=0; $i<count($sections); $i++){
+		$sql_questions = $app['db']->createQueryBuilder();
+		$sql_questions
+			->select('p.id_pregunta AS question_id, p.num_pregunta AS question_number, p.pregunta AS question, p.texto_ayuda AS help_text, p.ponderacion AS value, p.critica AS is_critic, p.foto AS upload_photo, p.max_caracteres AS max_char, p.tipo AS type')
+			->from('preguntas', 'p')
+			->where('p.id_seccion = ?')
+			->orderBy('p.num_pregunta', 'ASC');
+		$stmt = $app['db']->prepare($sql_questions);
+		$stmt->bindValue(1, $sections[$i]['id']);
+		$stmt->execute();
+		$questions = $stmt->fetchAll();
+
+		$question_options = array();
+
+		if(count($questions) > 0){
+			
+			$ii =0;
+			$jj =0;
+			for($j=0; $j<count($questions); $j++){
+				$ii++;
+				// This query gets the results or selected values in the respuestas_cuestionarios table
+				$sql_get_result = $app['db']->createQueryBuilder();
+				$sql_get_result
+					->select('rc.id_respuesta AS answer_id, rc.id_pregunta AS question_id, rc.id_opcion AS selected_option, rc.puntaje AS score, rc.valor AS value, rc.observaciones_auditor AS observations, rc.no_conformidad AS nonconformity, rc.no_aplica AS not_apply, CONCAT(id_cuestionario,\'_\',id_seccion,\'_\',id_pregunta,\'_\',id_opcion,\'_\',valor) AS string_selected_value')
+					->from('respuestas_cuestionarios', 'rc')
+					->where('rc.id_pregunta = ?')
+					->andWhere('id_seccion = ?')
+					->andWhere('id_cuestionario = ?')
+					->andWhere('id_cuestionario_respondido = ?');
+				$stmt = $app['db']->prepare($sql_get_result);
+				$stmt->bindValue(1, $questions[$j]['question_id']);
+				$stmt->bindValue(2, $sections[$i]['id']);
+				$stmt->bindValue(3, $questionnaire_id);
+				$stmt->bindValue(4, $answered_questionnaire_id);
+				$stmt->execute();
+				$question_result = $stmt->fetch();
+
+				// Getting options for each question
+				$sql_options = $app['db']->createQueryBuilder();
+				$sql_options
+					->select('rop.id_opcion AS option_id, rop.opcion AS question_option, rop.valor AS value')
+					->from('r_opciones_preguntas', 'rop')
+					->where('rop.id_pregunta = ?');
+				$stmt = $app['db']->prepare($sql_options);
+				$stmt->bindValue(1, $questions[$j]['question_id']);
+				$stmt->execute();
+				$options = $stmt->fetchAll();
+
+				$question_options[$j]['question_id'] = $questions[$j]['question_id'];
+				$question_options[$j]['question_number'] = $questions[$j]['question_number'];
+				$question_options[$j]['question'] = $questions[$j]['question'];
+				$question_options[$j]['help_text'] = $questions[$j]['help_text'];
+				$question_options[$j]['value'] = $questions[$j]['value'];
+				$question_options[$j]['is_critic'] = $questions[$j]['is_critic'];
+				$question_options[$j]['upload_photo'] = $questions[$j]['upload_photo'];
+				$question_options[$j]['max_char'] = $questions[$j]['max_char'];
+				$question_options[$j]['type'] = $questions[$j]['type'];
+				$question_options[$j]['question_result'] = $question_result;
+				$question_options[$j]['options'] = $options;
+				
+				if ($question_options[$j]['question_result']) {
+					$jj++;
+				}
+			}	
+		}/*else{
+			$question_options = array();
+		}*/
+
+		$result[$i]['id'] = $sections[$i]['id'];
+		$result[$i]['questionnaire_id'] = $sections[$i]['questionnaire_id'];
+		$result[$i]['section_number'] = $sections[$i]['section_number'];
+		$result[$i]['name'] = $sections[$i]['name'];
+		$result[$i]['description'] = $sections[$i]['description'];
+		$result[$i]['value'] = $sections[$i]['value'];
+		$result[$i]['creation_date'] = $sections[$i]['creation_date'];
+		$result[$i]['sum_preguntas'] = $ii;
+		$result[$i]['sum_respuestas'] = $jj;
+		$result[$i]['questions'] = $question_options;
+		
+	}
+
+	return $app->json($result);
+});
+
+
+
 
 // Get sections of a questionnaire
 $app->get('/v1/questionnaires/sections/get/{questionnaire_id}/{answered_questionnaire_id}', function($questionnaire_id, $answered_questionnaire_id) use ($app){
@@ -620,7 +724,7 @@ $app->get('/v1/questionnaires/auditors/get-questionnaires-and-clients/{auditor_i
 $app->get('/v1/questionnaire/get-informe/{id}', function($id) use ($app){
 	$sql = $app['db']->createQueryBuilder();
 	$sql
-		->select('s.id_cuestionario_respondido, s.firma AS firma, s.firma_auditor AS firma2 , s.estado AS finalizado ,s.auditor_atiende AS aud_atiende, s.fecha_inicia_auditoria AS f_inicio_audit, s.fecha_termina_auditoria AS f_termino_audit, s.informe_preliminar')
+		->select('s.id_auditor,s.resultado_total, s.hora_inicio,s.hora_finalizacion,s.id_cuestionario_respondido, s.firma AS firma, s.firma_auditor AS firma2 , s.estado AS finalizado ,s.auditor_atiende AS aud_atiende, s.fecha_inicia_auditoria AS f_inicio_audit, s.fecha_termina_auditoria AS f_termino_audit, s.informe_preliminar')
 		->from('cuestionarios_respondidos', 's')
 		->where('s.id_cuestionario_respondido = ?');
 	$stmt = $app['db']->prepare($sql);
@@ -632,6 +736,125 @@ $app->get('/v1/questionnaire/get-informe/{id}', function($id) use ($app){
 
 });
 
+// Eliminar informe preliminar
+$app->get('/v1/questionnaire/delete-informe/{id}', function($id) use ($app){
+	$sql = "DELETE FROM cuestionarios_respondidos WHERE id_cuestionario_respondido =".$id;
+	
+	$stmt = $app['db']->prepare($sql);
+	$delete = $stmt->execute();
+	
+	if ($delete) {	
+		$result = array(
+			"result_code" => 1,
+			"message" => "Registro ELIMINADO exitosamente."
+		);
+		return $app->json($result);
+	}
+
+});
+
+// Editar informe preliminar
+$app->post('/v1/questionnaires/modify-informe', function(Request $request) use ($app){
+
+	$data = json_decode($request->getContent(), true);
+	$request->request->replace(is_array($data) ? $data : array());
+
+
+	$idEvent = $request->request->get('idEvent');
+	$f_inicio_audit = $request->request->get('f_inicio_audit');
+	$f_fin_audit = $request->request->get('f_fin_audit');
+	$ver_total = $request->request->get('ver_total');
+	$id_auditor = $request->request->get('id_auditor');
+
+
+	$sql = "UPDATE cuestionarios_respondidos 
+			SET
+				fecha_inicia_auditoria = ?,
+				fecha_termina_auditoria = ?,
+				resultado_total = ?,
+                id_auditor = ?
+			WHERE id_cuestionario_respondido = ?";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->bindValue(1, $f_inicio_audit);
+	$stmt->bindValue(2, $f_fin_audit);
+	$stmt->bindValue(3, $ver_total);
+	$stmt->bindValue(4, $id_auditor);
+	$stmt->bindValue(5, $idEvent);
+
+	$update = $stmt->execute();
+
+	if($update == true){
+		$response = array(
+			"result_code" => 1,
+			"message" => "El registro se ha modificado exitosamente."
+		);
+	}else{
+		$response = array(
+			"result_code" => 0,
+			"message" => "Ha ocurrido un error. Intente de nuevo más tarde."
+		);
+	}
+
+	return $app->json($response);
+});
+
+
+// Obtener cuestionarios respodidos Para crear el informe preliminar
+$app->get('/v1/questionnaire/get-cuestionario-respondido/{id}', function($id) use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select * from respuestas_cuestionarios where id_cuestionario_respondido =".$id;
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$respuestas = $stmt->fetchAll();
+	
+	//METODO DE INSERTAR LA LISTA CONSULTADA DE RESPEUSTAS
+
+	for($i=0; $i<count($respuestas); $i++){
+		$answer = $respuestas[$i];
+		
+			$insert_answer = "INSERT INTO informe_preliminar
+								(id_respuesta,
+								id_cuestionario_respondido,
+								id_cuestionario,
+								id_seccion,
+								id_pregunta,
+								id_opcion,
+								puntaje,
+								valor,
+								fecha_respuesta,
+								hora_respuesta,
+								observaciones_auditor,
+								no_conformidad,
+								no_aplica,
+								fecha_alta)
+							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			$stmt = $app['db']->prepare($insert_answer);
+			$stmt->bindValue(1, $answer['id_respuesta']);
+			$stmt->bindValue(2, $answer['id_cuestionario_respondido']);
+			$stmt->bindValue(3, $answer['id_cuestionario']);
+			$stmt->bindValue(4, $answer['id_seccion']);
+			$stmt->bindValue(5, $answer['id_pregunta']);
+			$stmt->bindValue(6, $answer['id_opcion']);
+			$stmt->bindValue(7, $answer['puntaje']);
+			$stmt->bindValue(8, $answer['valor']);
+			$stmt->bindValue(9, $answer['fecha_respuesta']);
+			$stmt->bindValue(10, $answer['hora_respuesta']);
+			$stmt->bindValue(11, $answer['observaciones_auditor']);
+			$stmt->bindValue(12, $answer['no_conformidad']);
+			$stmt->bindValue(13, $answer['no_aplica']);
+			$stmt->bindValue(14, $answer['fecha_alta']);
+			$inserted_answer = $stmt->execute();
+			
+		}
+
+	$result = array(
+		"result_code" => 1,
+		"message" => "Informe creado exitosamente."
+	);
+		return $app->json($inserted_answer);
+
+
+});
 
 
 // Saving the questionnaire answers
@@ -647,15 +870,12 @@ $app->post('/v1/questionnaire/create-informe', function(Request $request) use ($
 	$firma = $request->request->get('firma');
 	$firma2 = $request->request->get('firma2');
 	
-
-
-
 	$sql = "UPDATE 
 				cuestionarios_respondidos
 			SET
 				auditor_atiende = ?,
-				fecha_inicia_auditoria = ?,
-				fecha_termina_auditoria = ?,
+				hora_inicio = ?,
+				hora_finalizacion = ?,
 				firma = ?,
 				firma_auditor = ?,
 				informe_preliminar = 1
@@ -975,14 +1195,218 @@ $app->post('/v1/questionnaire/finaliza-cuestionary', function(Request $request) 
 });
 
 
+// Este controller obtiene Todos los reportes para el usuario administrador
+$app->get('/v1/questionnaires/auditors/get-all-questionnaires-finalizados/', function() use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql ="select cr.id_cliente as company_id,cr.estado AS edo,cr.liberado AS ado,cr.id_cuestionario as questionnaire_id,cr.id_cuestionario as id_auditor, concat(u.nombre,' ',u.apellido_paterno,' ',u.apellido_materno) as nombre_auditor, cr.id_cuestionario_respondido,cr.fecha_inicia_auditoria AS fecha_auditoria ,e.nombre_comercial as company_name, c.codigo as questionnaire_code, c.nombre as questionnaire_name, cr.estado AS finalizado, cr.informe_preliminar from cuestionarios_respondidos as cr
+		inner join usuarios as u on u.id_usuario = cr.id_auditor
+        inner join empresas as e on e.id_empresa = cr.id_cliente
+		inner join cuestionarios as c on c.id_cuestionario = cr.id_cuestionario
+		where cr.estado = 1 order by cr.id_cuestionario_respondido desc";
+
+
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$questionarios = $stmt->fetchAll();
+	
+	for ($i=0; $i < count($questionarios) ; $i++) { 
+			
+			$registro['finalizado']="";
+			$registro['informe_preliminar']="";
+			if ($questionarios[$i]['finalizado']==1) {
+				$registro['finalizado'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Finalizado</span>';
+			}else{
+				$registro['finalizado'] = '<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No finalizado</span>';
+			}
+			//Informe general generado 
+			if ($questionarios[$i]['informe_preliminar']==1) {
+				$registro['informe_preliminar'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe Generado</span>';
+			}else{
+				$registro['informe_preliminar'] = '<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe no generado</span>';
+			}
+			//}
+			$questionarios[$i]['estado_cuestionario'] = $registro;	//Estados
+
+
+			//Numero de preguntas por cuestionarios
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "SELECT COUNT(*) AS total_questions FROM preguntas AS p LEFT JOIN secciones_cuestionario AS sc ON sc.id_seccion = p.id_seccion WHERE sc.id_cuestionario =".$questionarios[$i]['questionnaire_id'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$questionarios[$i]['total_preguntas'] = $registro4['total_questions'];	//Respuestas agregadas
+
+
+			//Numero de respuestas insertadas por cuestionarios
+			$sql3 = $app['db']->createQueryBuilder();
+			$sql3 = "select count(*) as tot_respuestas from respuestas_cuestionarios where id_cuestionario_respondido = ".$questionarios[$i]['id_cuestionario_respondido']." and id_cuestionario =".$questionarios[$i]['questionnaire_id'];
+
+			$stmt3 = $app['db']->prepare($sql3);
+			$stmt3->execute();
+			$registro3 = $stmt3->fetch();
+			$questionarios[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
+
+			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+
+			if($res_avance == 0) {
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+			if($res_avance == 100) {
+				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+
+			$p_sttu ="";
+			$reviewed=""; //revisado
+			if ($questionarios[$i]['ado']==1) {
+				$reviewed = '<span class="glyphicon glyphicon-ok"></span>';
+				//$reviewed ='<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Revisado</span>';
+			}else{
+				$reviewed = '';
+				//$reviewed ='<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No Revisado</span>';
+			}
+			
+			$approved=""; //revisado
+			if ($questionarios[$i]['ado']==2) {
+				//$approved ='<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Aprobado</span>';
+				$approved = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$approved = '';
+				//$approved ='<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No Aprobado</span>';
+			}
+			
+			$liberado=""; //revisado
+			if ($questionarios[$i]['ado']==3) {
+				//$liberado ='<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Liberado</span>';	
+				$liberado = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$liberado = '';
+				//$liberado ='<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No Liberado</span>';
+			}	
+
+			//Todos los datos
+			$response[$i] = array('company_id' => $questionarios[$i]['company_id'],
+				'nombre_auditor' => $questionarios[$i]['nombre_auditor'],			
+				'company_name' => $questionarios[$i]['company_name'],
+				'total_preguntas' => $questionarios[$i]['total_preguntas'],
+				'total_respuestas' => $questionarios[$i]['total_respuestas'],
+				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $questionarios[$i]['fecha_auditoria'],
+				'questionnaire_id' => $questionarios[$i]['questionnaire_id'],
+				'id_cuestionario_respondido' => $questionarios[$i]['id_cuestionario_respondido'],
+			 	'questionnaire_name' => $questionarios[$i]['questionnaire_name'],
+				'questionnaire_code' => $questionarios[$i]['questionnaire_code'],
+				'estados' => $questionarios[$i]['estado_cuestionario'],
+				'reviewed' => $reviewed,
+				'approved' => $approved,
+				'liberado' => $liberado
+			);
+		}
+		return $app->json($response);
+
+});
+
+
 
 // Este controller obtiene la relacion de  companies asignadas a auditor
 $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{auditor_id}', function($auditor_id) use ($app){
 	$sql = $app['db']->createQueryBuilder();
-	$sql ="select cr.id_cliente as company_id,cr.id_cuestionario as questionnaire_id, cr.id_cuestionario_respondido,cr.fecha_auditoria ,e.nombre_comercial as company_name, c.codigo as questionnaire_code, c.nombre as questionnaire_name, cr.estado AS finalizado, cr.informe_preliminar from cuestionarios_respondidos as cr
+	$sql ="select cr.id_cliente as company_id, cr.estado AS edo,cr.liberado AS ado,cr.id_cuestionario as questionnaire_id, cr.id_cuestionario_respondido,cr.fecha_inicia_auditoria AS fecha_auditoria ,e.nombre_comercial as company_name, c.codigo as questionnaire_code, c.nombre as questionnaire_name, cr.estado AS finalizado, cr.informe_preliminar from cuestionarios_respondidos as cr
 		inner join empresas as e on e.id_empresa = cr.id_cliente
 		inner join cuestionarios as c on c.id_cuestionario = cr.id_cuestionario
-		where cr.id_auditor=".$auditor_id;
+		where cr.id_auditor=".$auditor_id." order by cr.id_cuestionario_respondido desc";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$questionarios = $stmt->fetchAll();
+
+	
+		for ($i=0; $i < count($questionarios) ; $i++) { 
+		
+
+			$registro['finalizado']="";
+			$registro['informe_preliminar']="";
+			if ($questionarios[$i]['finalizado']==1) {
+				$registro['finalizado'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Finalizado</span>';
+			}else{
+				$registro['finalizado'] = '<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No finalizado</span>';
+			}
+			//Informe general generado 
+			if ($questionarios[$i]['informe_preliminar']==1) {
+				$registro['informe_preliminar'] = '<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe Generado</span>';
+				$show_informe = '<button class="btn btn-default" onclick="viewInform('.$questionarios[$i]['id_cuestionario_respondido'].');" id="viewReportPr"><span class="glyphicon glyphicon-eye-open"></span></button>';
+
+			}else{
+				$registro['informe_preliminar'] = '<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Informe no generado</span>';
+				$show_informe = '<button class="btn btn-default disabled"><span class="glyphicon glyphicon-eye-open"></span></button>';
+			}
+			//}
+			$questionarios[$i]['estado_cuestionario'] = $registro;	//Estados
+
+
+			//Numero de preguntas por cuestionarios
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "SELECT COUNT(*) AS total_questions FROM preguntas AS p LEFT JOIN secciones_cuestionario AS sc ON sc.id_seccion = p.id_seccion WHERE sc.id_cuestionario =".$questionarios[$i]['questionnaire_id'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$questionarios[$i]['total_preguntas'] = $registro4['total_questions'];	//Respuestas agregadas
+
+
+			//Numero de respuestas insertadas por cuestionarios
+			$sql3 = $app['db']->createQueryBuilder();
+			$sql3 = "select count(*) as tot_respuestas from respuestas_cuestionarios where id_cuestionario_respondido = ".$questionarios[$i]['id_cuestionario_respondido']." and id_cuestionario =".$questionarios[$i]['questionnaire_id'];
+
+			$stmt3 = $app['db']->prepare($sql3);
+			$stmt3->execute();
+			$registro3 = $stmt3->fetch();
+			$questionarios[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
+
+			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+		
+
+			if($res_avance == 0) {
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+
+			}
+			if($res_avance == 100) {
+				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			
+			}
+					
+
+			//Todos los datos
+			$response[$i] = array('company_id' => $questionarios[$i]['company_id'],
+				'company_name' => $questionarios[$i]['company_name'],
+				'total_preguntas' => $questionarios[$i]['total_preguntas'],
+				'total_respuestas' => $questionarios[$i]['total_respuestas'],
+				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $questionarios[$i]['fecha_auditoria'],
+				'questionnaire_id' => $questionarios[$i]['questionnaire_id'],
+				'id_cuestionario_respondido' => $questionarios[$i]['id_cuestionario_respondido'],
+			 	'questionnaire_name' => $questionarios[$i]['questionnaire_name'],
+				'questionnaire_code' => $questionarios[$i]['questionnaire_code'],
+				'estados' => $questionarios[$i]['estado_cuestionario']  ,
+				'show_informe' => $show_informe			
+			);
+		}
+	
+	//$result['cuestionarios'] = $questionnaires;
+	
+	return $app->json($response);
+	
+
+});
+
+// Este controller obtiene la relacion de eventos asignadas a auditor, pero solamente los reportes finalizadas
+$app->get('/v1/questionnaires/auditors/get-list-questionnaires-finalizados/{auditor_id}', function($auditor_id) use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql ="select cr.id_cliente as company_id,cr.estado AS edo,cr.liberado AS ado,cr.id_cuestionario as questionnaire_id, cr.id_cuestionario_respondido,cr.fecha_inicia_auditoria AS fecha_auditoria ,e.nombre_comercial as company_name, c.codigo as questionnaire_code, c.nombre as questionnaire_name, cr.estado AS finalizado, cr.informe_preliminar from cuestionarios_respondidos as cr
+		inner join empresas as e on e.id_empresa = cr.id_cliente
+		inner join cuestionarios as c on c.id_cuestionario = cr.id_cuestionario
+		where cr.id_auditor=".$auditor_id." and cr.estado = 1 order by cr.id_cuestionario_respondido desc";
 	$stmt = $app['db']->prepare($sql);
 	$stmt->execute();
 	$questionarios = $stmt->fetchAll();
@@ -1037,6 +1461,34 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 			}
 
+			$p_sttu ="";
+			$reviewed=""; //revisado
+			if ($questionarios[$i]['ado']==1) {
+				$reviewed = '<span class="glyphicon glyphicon-ok"></span>';
+				//$reviewed ='<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Revisado</span>';
+			}else{
+				$reviewed = '';
+				//$reviewed ='<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No Revisado</span>';
+			}
+			
+			$approved=""; //revisado
+			if ($questionarios[$i]['ado']==2) {
+				//$approved ='<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Aprobado</span>';
+				$approved = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$approved = '';
+				//$approved ='<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No Aprobado</span>';
+			}
+			
+			$liberado=""; //revisado
+			if ($questionarios[$i]['ado']==3) {
+				//$liberado ='<span class="label label-success"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Liberado</span>';	
+				$liberado = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$liberado = '';
+				//$liberado ='<span class="label label-default"> <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> No Liberado</span>';
+			}	
+
 			//Todos los datos
 			$response[$i] = array('company_id' => $questionarios[$i]['company_id'],
 				'company_name' => $questionarios[$i]['company_name'],
@@ -1048,7 +1500,10 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 				'id_cuestionario_respondido' => $questionarios[$i]['id_cuestionario_respondido'],
 			 	'questionnaire_name' => $questionarios[$i]['questionnaire_name'],
 				'questionnaire_code' => $questionarios[$i]['questionnaire_code'],
-				'estados' => $questionarios[$i]['estado_cuestionario']
+				'estados' => $questionarios[$i]['estado_cuestionario'],
+				'reviewed' => $reviewed,
+				'approved' => $approved,
+				'liberado' => $liberado
 			);
 	}
 	
@@ -1060,15 +1515,16 @@ $app->get('/v1/questionnaires/auditors/get-list-questionnaires-and-clients/{audi
 });
 
 
-// Obter eventos creados por un gerente y asignados a sus audotores
-$app->get('/v1/questionnaires/auditors/get-eventos-gerente-auditor/{id_gerente}', function($id_gerente) use ($app){
+
+// Obter eventos creados por cualquier gerente a audotores
+$app->get('/v1/questionnaires/auditors/get-eventos-admin-ger-auditor/}', function() use ($app){
 	$sql = $app['db']->createQueryBuilder();
-	$sql = "select cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_auditoria from r_gerentes_auditores
+	$sql = "select cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_inicia_auditoria as fecha_auditoria from r_gerentes_auditores
 inner join usuarios on usuarios.id_usuario = r_gerentes_auditores.id_auditor
 inner join cuestionarios_respondidos on cuestionarios_respondidos.id_auditor = r_gerentes_auditores.id_auditor
 inner join cuestionarios on cuestionarios.id_cuestionario = cuestionarios_respondidos.id_cuestionario
 inner join empresas on empresas.id_empresa = cuestionarios_respondidos.id_cliente
-where r_gerentes_auditores.id_gerente =".$id_gerente;
+where r_gerentes_auditores.id_gerente =".$id_gerente." order by id_cuestionario_respondido desc";
 	$stmt = $app['db']->prepare($sql);
 	$stmt->execute();
 	$eventos = $stmt->fetchAll();
@@ -1103,6 +1559,14 @@ where r_gerentes_auditores.id_gerente =".$id_gerente;
 				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
 			}
 
+			$edit = '<button type="button" class="btn btn-default" onclick="editEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
+
+			if ($registro3['tot_respuestas'] <=0) {
+				$elimi = '<button type="button" class="btn btn-danger" onclick="deleteEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}else{
+				$elimi = '<button type="button" class="btn btn-danger disabled"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}
+			
 
 			//Todos los datos
 			$questionnaires[$i] = array('id_cuestionario_respondido' => $eventos[$i]['id_cuestionario_respondido'],
@@ -1112,10 +1576,452 @@ where r_gerentes_auditores.id_gerente =".$id_gerente;
 				'total_preguntas' => $eventos[$i]['total_preguntas'],
 				'total_respuestas' => $eventos[$i]['total_respuestas'],
 				'porcentaje_question' => $cuestio,
-				'fecha_auditoria' => $eventos[$i]['fecha_auditoria']
+				'fecha_auditoria' => $eventos[$i]['fecha_auditoria'],
+				'editable' => $edit,
+				'eliminar' => $elimi
 			);
 
 	}
+	return $app->json($questionnaires);
+});
+
+
+// Obter eventos creados por un gerente y asignados a sus audotores vista para administradores
+$app->get('/v1/questionnaires/auditors/get-eventos-administrador-admin', function() use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_inicia_auditoria as fecha_auditoria from r_gerentes_auditores
+inner join usuarios on usuarios.id_usuario = r_gerentes_auditores.id_auditor
+inner join cuestionarios_respondidos on cuestionarios_respondidos.id_auditor = r_gerentes_auditores.id_auditor
+inner join cuestionarios on cuestionarios.id_cuestionario = cuestionarios_respondidos.id_cuestionario
+inner join empresas on empresas.id_empresa = cuestionarios_respondidos.id_cliente 
+group by id_cuestionario_respondido order by id_cuestionario_respondido desc";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$eventos = $stmt->fetchAll();
+	
+	for ($i=0; $i < count($eventos) ; $i++) {
+
+			//Numero de preguntas por cuestionarios
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "SELECT COUNT(*) AS total_questions FROM preguntas AS p LEFT JOIN secciones_cuestionario AS sc ON sc.id_seccion = p.id_seccion WHERE sc.id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$eventos[$i]['total_preguntas'] = $registro4['total_questions'];	//Respuestas agregadas
+
+
+			//Numero de respuestas insertadas por cuestionarios
+			$sql3 = $app['db']->createQueryBuilder();
+			$sql3 = "select count(*) as tot_respuestas from respuestas_cuestionarios where id_cuestionario_respondido = ".$eventos[$i]['id_cuestionario_respondido']." and id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt3 = $app['db']->prepare($sql3);
+			$stmt3->execute();
+			$registro3 = $stmt3->fetch();
+			$eventos[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
+
+			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+
+			if($res_avance == 0) {
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+			if($res_avance == 100) {
+				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+
+			$edit = '<button type="button" class="btn btn-default" onclick="editEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
+
+			if ($registro3['tot_respuestas'] <=0) {
+				$elimi = '<button type="button" class="btn btn-danger" onclick="deleteEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}else{
+				$elimi = '<button type="button" class="btn btn-danger disabled"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}
+			
+			//Nombre de los gerentes
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "select concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_gerente from usuarios
+where id_usuario =".$eventos[$i]['id_g'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$nombre_gerente = $registro4['nombre_gerente'];
+
+
+			//Todos los datos
+			$questionnaires[$i] = array('id_cuestionario_respondido' => $eventos[$i]['id_cuestionario_respondido'],
+				'nombre_auditor' => $eventos[$i]['nombre_auditor'],
+				'nombre_gerente' => $nombre_gerente,
+				'codigo' => $eventos[$i]['codigo'],
+				'nombre_comercial' => $eventos[$i]['nombre_comercial'],
+				'total_preguntas' => $eventos[$i]['total_preguntas'],
+				'total_respuestas' => $eventos[$i]['total_respuestas'],
+				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $eventos[$i]['fecha_auditoria'],
+				'editable' => $edit,
+				'eliminar' => $elimi
+			);
+
+	}
+	return $app->json($questionnaires);
+});
+
+
+
+
+// Obter eventos creados por un gerente y asignados a sus audotores
+$app->get('/v1/questionnaires/auditors/get-eventos-gerente-auditor/{id_gerente}', function($id_gerente) use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_inicia_auditoria as fecha_auditoria from r_gerentes_auditores
+inner join usuarios on usuarios.id_usuario = r_gerentes_auditores.id_auditor
+inner join cuestionarios_respondidos on cuestionarios_respondidos.id_auditor = r_gerentes_auditores.id_auditor
+inner join cuestionarios on cuestionarios.id_cuestionario = cuestionarios_respondidos.id_cuestionario
+inner join empresas on empresas.id_empresa = cuestionarios_respondidos.id_cliente
+where r_gerentes_auditores.id_gerente =".$id_gerente." order by id_cuestionario_respondido desc";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$eventos = $stmt->fetchAll();
+	for ($i=0; $i < count($eventos) ; $i++) { 
+
+			//Numero de preguntas por cuestionarios
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "SELECT COUNT(*) AS total_questions FROM preguntas AS p LEFT JOIN secciones_cuestionario AS sc ON sc.id_seccion = p.id_seccion WHERE sc.id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$eventos[$i]['total_preguntas'] = $registro4['total_questions'];	//Respuestas agregadas
+
+
+			//Numero de respuestas insertadas por cuestionarios
+			$sql3 = $app['db']->createQueryBuilder();
+			$sql3 = "select count(*) as tot_respuestas from respuestas_cuestionarios where id_cuestionario_respondido = ".$eventos[$i]['id_cuestionario_respondido']." and id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt3 = $app['db']->prepare($sql3);
+			$stmt3->execute();
+			$registro3 = $stmt3->fetch();
+			$eventos[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
+
+			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+
+			if($res_avance == 0) {
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+			if($res_avance == 100) {
+				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+
+			$edit = '<button type="button" class="btn btn-default" onclick="editEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
+
+			if ($registro3['tot_respuestas'] <=0) {
+				$elimi = '<button type="button" class="btn btn-danger" onclick="deleteEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}else{
+				$elimi = '<button type="button" class="btn btn-danger disabled"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}
+			
+
+			//Todos los datos
+			$questionnaires[$i] = array('id_cuestionario_respondido' => $eventos[$i]['id_cuestionario_respondido'],
+				'nombre_auditor' => $eventos[$i]['nombre_auditor'],
+				'codigo' => $eventos[$i]['codigo'],
+				'nombre_comercial' => $eventos[$i]['nombre_comercial'],
+				'total_preguntas' => $eventos[$i]['total_preguntas'],
+				'total_respuestas' => $eventos[$i]['total_respuestas'],
+				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $eventos[$i]['fecha_auditoria'],
+				'editable' => $edit,
+				'eliminar' => $elimi
+			);
+
+	}
+	return $app->json($questionnaires);
+});
+
+
+//1 revisado
+//2 aprobado
+//3 liberado
+// Obter eventos creados por un gerente y asignados a sus audotores, solo cuestionarios finalizados
+$app->get('/v1/questionnaires/auditors/get-eventos-gerente-auditor-fin/{id_gerente}', function($id_gerente) use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select cuestionarios_respondidos.estado AS edo, cuestionarios_respondidos.liberado AS ado, cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_inicia_auditoria as fecha_auditoria from r_gerentes_auditores
+inner join usuarios on usuarios.id_usuario = r_gerentes_auditores.id_auditor
+inner join cuestionarios_respondidos on cuestionarios_respondidos.id_auditor = r_gerentes_auditores.id_auditor
+inner join cuestionarios on cuestionarios.id_cuestionario = cuestionarios_respondidos.id_cuestionario
+inner join empresas on empresas.id_empresa = cuestionarios_respondidos.id_cliente
+where r_gerentes_auditores.id_gerente =".$id_gerente." and cuestionarios_respondidos.estado = 1 order by id_cuestionario_respondido desc";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$eventos = $stmt->fetchAll();
+	for ($i=0; $i < count($eventos) ; $i++) { 
+
+			//Numero de preguntas por cuestionarios
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "SELECT COUNT(*) AS total_questions FROM preguntas AS p LEFT JOIN secciones_cuestionario AS sc ON sc.id_seccion = p.id_seccion WHERE sc.id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$eventos[$i]['total_preguntas'] = $registro4['total_questions'];	//Respuestas agregadas
+
+
+			//Numero de respuestas insertadas por cuestionarios
+			$sql3 = $app['db']->createQueryBuilder();
+			$sql3 = "select count(*) as tot_respuestas from respuestas_cuestionarios where id_cuestionario_respondido = ".$eventos[$i]['id_cuestionario_respondido']." and id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt3 = $app['db']->prepare($sql3);
+			$stmt3->execute();
+			$registro3 = $stmt3->fetch();
+			$eventos[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
+
+			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+
+			if($res_avance == 0) {
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+			if($res_avance == 100) {
+				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span> Finalizado</span>';
+			}
+
+			$edit = '<button type="button" class="btn btn-default" onclick="editEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
+
+			if ($registro3['tot_respuestas'] <=0) {
+				$elimi = '<button type="button" class="btn btn-danger" onclick="deleteEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}else{
+				$elimi = '<button type="button" class="btn btn-danger disabled"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}
+			
+
+			$p_sttu ="";
+			$reviewed=""; //revisado
+			if ($eventos[$i]['ado']==1) {
+				$reviewed = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$reviewed = '';
+			}
+			
+			$approved=""; //aprobado
+			if ($eventos[$i]['ado']==2) {
+				$approved = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$approved = '';
+			}
+			
+			$liberado=""; //liberado
+			if ($eventos[$i]['ado']==3) {
+				$liberado = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$liberado = '';
+			}	
+
+		/*	$reviewed=""; //revisado
+			if ($eventos[$i]['edo'] == 1 && $eventos[$i]['ado']==0) {
+				$reviewed = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$reviewed = '';
+			}
+			
+			$approved=""; //aprobado
+			if ($eventos[$i]['edo'] == 2 && $eventos[$i]['ado']==0) {
+				$approved = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$approved = '';
+			}
+			
+			$liberado=""; //liberado
+			if ($eventos[$i]['edo'] == 2 && $eventos[$i]['ado']==1) {
+				$liberado = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$liberado = '';
+			}	*/
+
+
+			//$reviewed = $eventos[$i]['edo'];
+			//$liberado = $eventos[$i]['ado'];
+			//Todos los datos
+			$questionnaires[$i] = array('id_cuestionario_respondido' => $eventos[$i]['id_cuestionario_respondido'],
+				'nombre_auditor' => $eventos[$i]['nombre_auditor'],
+				'codigo' => $eventos[$i]['codigo'],
+				'nombre_comercial' => $eventos[$i]['nombre_comercial'],
+				'total_preguntas' => $eventos[$i]['total_preguntas'],
+				'total_respuestas' => $eventos[$i]['total_respuestas'],
+				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $eventos[$i]['fecha_auditoria'],
+				'editable' => $edit,
+				'eliminar' => $elimi,
+			   'reviewed' => $reviewed,
+				'approved' => $approved,
+				'liberado' => $liberado	
+			);
+
+	}
+	return $app->json($questionnaires);
+});
+
+
+//1 revisado
+//2 aprobado
+//3 liberado
+// Obter Reportes, cuestionarios finalizados y que son de gerentes externos
+$app->get('/v1/questionnaires/auditors/get-eventos-gerente-externo-auditor-fin/{id_gerente}/{is_reviser}/{is_regional}', function($id_gerente,$is_reviser,$is_regional) use ($app){
+	$operacion =null;
+	if ($is_reviser == 0 && $is_regional == 0) { //gerente externo, a secas
+		$operacion = " cuestionarios_respondidos.liberado=3";
+	}
+	if ($is_reviser == 0 && $is_regional == 1) { //gerente externo, regional
+		$operacion = " cuestionarios_respondidos.liberado>=1";
+	}
+	if ($is_reviser == 1 && $is_regional == 0) { //gerente externo, revisor
+		$operacion = " cuestionarios_respondidos.estado=1";
+	}
+
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select empresas.id_empresa, cuestionarios_respondidos.estado AS edo, cuestionarios_respondidos.liberado AS ado, cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_inicia_auditoria as fecha_auditoria from r_gerentes_auditores
+inner join usuarios on usuarios.id_usuario = r_gerentes_auditores.id_auditor
+inner join cuestionarios_respondidos on cuestionarios_respondidos.id_auditor = r_gerentes_auditores.id_auditor
+inner join cuestionarios on cuestionarios.id_cuestionario = cuestionarios_respondidos.id_cuestionario
+inner join empresas on empresas.id_empresa = cuestionarios_respondidos.id_cliente
+where empresas.id_empresa in (select r_gerentes_empresas.id_empresa from r_gerentes_empresas where id_gerente = ".$id_gerente.") and ".$operacion." 
+group by cuestionarios_respondidos.id_cuestionario_respondido
+order by cuestionarios_respondidos.id_cuestionario_respondido desc;";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$eventos = $stmt->fetchAll();
+
+/*
+
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select cuestionarios_respondidos.estado AS edo, cuestionarios_respondidos.liberado AS ado, cuestionarios_respondidos.id_cuestionario,cuestionarios_respondidos.id_cuestionario_respondido ,r_gerentes_auditores.id_gerente as id_g, r_gerentes_auditores.id_auditor as id_a, concat(usuarios.nombre,' ',usuarios.apellido_paterno,' ',usuarios.apellido_materno) as nombre_auditor, empresas.nombre_comercial ,cuestionarios.codigo ,cuestionarios_respondidos.fecha_inicia_auditoria as fecha_auditoria from r_gerentes_auditores
+inner join usuarios on usuarios.id_usuario = r_gerentes_auditores.id_auditor
+inner join cuestionarios_respondidos on cuestionarios_respondidos.id_auditor = r_gerentes_auditores.id_auditor
+inner join cuestionarios on cuestionarios.id_cuestionario = cuestionarios_respondidos.id_cuestionario
+inner join empresas on empresas.id_empresa = cuestionarios_respondidos.id_cliente
+where r_gerentes_auditores.id_gerente =".$id_gerente." and cuestionarios_respondidos.estado = 1 order by id_cuestionario_respondido desc";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$eventos = $stmt->fetchAll();*/
+
+	for ($i=0; $i < count($eventos) ; $i++) { 
+
+			//Numero de preguntas por cuestionarios
+			$sql4 = $app['db']->createQueryBuilder();
+			$sql4 = "SELECT COUNT(*) AS total_questions FROM preguntas AS p LEFT JOIN secciones_cuestionario AS sc ON sc.id_seccion = p.id_seccion WHERE sc.id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt4 = $app['db']->prepare($sql4);
+			$stmt4->execute();
+			$registro4 = $stmt4->fetch();
+			$eventos[$i]['total_preguntas'] = $registro4['total_questions'];	//Respuestas agregadas
+
+
+			//Numero de respuestas insertadas por cuestionarios
+			$sql3 = $app['db']->createQueryBuilder();
+			$sql3 = "select count(*) as tot_respuestas from respuestas_cuestionarios where id_cuestionario_respondido = ".$eventos[$i]['id_cuestionario_respondido']." and id_cuestionario =".$eventos[$i]['id_cuestionario'];
+
+			$stmt3 = $app['db']->prepare($sql3);
+			$stmt3->execute();
+			$registro3 = $stmt3->fetch();
+			$eventos[$i]['total_respuestas'] = $registro3['tot_respuestas'];	//Respuestas agregadas
+
+			$res_avance = round(((100 / $registro4['total_questions']) * $registro3['tot_respuestas']));
+			$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+
+			if($res_avance == 0) {
+				$cuestio = '<span class="label label-default"> <span aria-hidden="true"></span>'.$res_avance.'%</span>';
+			}
+			if($res_avance == 100) {
+				$cuestio = '<span class="label label-success"> <span aria-hidden="true"></span> Finalizado</span>';
+			}
+
+			$edit = '<button type="button" class="btn btn-default" onclick="editEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
+
+			if ($registro3['tot_respuestas'] <=0) {
+				$elimi = '<button type="button" class="btn btn-danger" onclick="deleteEvent('.$eventos[$i]['id_cuestionario_respondido'].');"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}else{
+				$elimi = '<button type="button" class="btn btn-danger disabled"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>';
+			}
+			
+
+			$p_sttu ="";
+			$reviewed=""; //revisado
+			if ($eventos[$i]['ado']==1) {
+				$reviewed = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$reviewed = '';
+			}
+			
+			$approved=""; //aprobado
+			if ($eventos[$i]['ado']==2) {
+				$approved = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$approved = '';
+			}
+			
+			$liberado=""; //liberado
+			if ($eventos[$i]['ado']==3) {
+				$liberado = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$liberado = '';
+			}	
+
+		/*	$reviewed=""; //revisado
+			if ($eventos[$i]['edo'] == 1 && $eventos[$i]['ado']==0) {
+				$reviewed = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$reviewed = '';
+			}
+			
+			$approved=""; //aprobado
+			if ($eventos[$i]['edo'] == 2 && $eventos[$i]['ado']==0) {
+				$approved = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$approved = '';
+			}
+			
+			$liberado=""; //liberado
+			if ($eventos[$i]['edo'] == 2 && $eventos[$i]['ado']==1) {
+				$liberado = '<span class="glyphicon glyphicon-ok"></span>';
+			}else{
+				$liberado = '';
+			}	*/
+
+
+			//$reviewed = $eventos[$i]['edo'];
+			//$liberado = $eventos[$i]['ado'];
+			//Todos los datos
+			$questionnaires[$i] = array('id_cuestionario_respondido' => $eventos[$i]['id_cuestionario_respondido'],
+				'nombre_auditor' => $eventos[$i]['nombre_auditor'],
+				'codigo' => $eventos[$i]['codigo'],
+				'nombre_comercial' => $eventos[$i]['nombre_comercial'],
+				'total_preguntas' => $eventos[$i]['total_preguntas'],
+				'total_respuestas' => $eventos[$i]['total_respuestas'],
+				'porcentaje_question' => $cuestio,
+				'fecha_auditoria' => $eventos[$i]['fecha_auditoria'],
+				'editable' => $edit,
+				'eliminar' => $elimi,
+			   'reviewed' => $reviewed,
+				'approved' => $approved,
+				'liberado' => $liberado	
+			);
+
+	}
+	return $app->json($questionnaires);
+});
+
+
+// This controller get all gerentes
+$app->get('/v1/questionnaires/auditors/get-gerentes', function() use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select id_gerente as id_g, id_auditor as id_a, concat(nombre,' ',apellido_paterno,' ',apellido_materno) as nombre_gerente from r_gerentes_auditores
+inner join usuarios
+on usuarios.id_usuario = r_gerentes_auditores.id_gerente
+where r_gerentes_auditores.id_gerente group by id_gerente";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$questionnaires = $stmt->fetchAll();
+
 	return $app->json($questionnaires);
 });
 
@@ -1132,6 +2038,20 @@ where r_gerentes_auditores.id_gerente =".$id_gerente;
 
 	return $app->json($questionnaires);
 });
+
+
+// This controller get all auditores para el administrador cuando edita un evento 
+$app->get('/v1/questionnaires/auditors/get-all-auditores', function() use ($app){
+	$sql = $app['db']->createQueryBuilder();
+	$sql = "select id_usuario as id_a, concat(nombre,' ',apellido_paterno,' ',apellido_materno) as nombre_auditor from usuarios
+where usuarios.id_privilegios = 3";
+	$stmt = $app['db']->prepare($sql);
+	$stmt->execute();
+	$questionnaires = $stmt->fetchAll();
+
+	return $app->json($questionnaires);
+});
+
 
 // This controller get epresas que puede asignar un gerente
 $app->get('/v1/questionnaires/auditors/get-planta/{id_gerente}', function($id_gerente) use ($app){
@@ -1174,19 +2094,24 @@ $app->post('/v1/questionnaire/create-event', function(Request $request) use ($ap
 	$questionnaire_id = $request->request->get('questionnaire_id');
 	$client_id = $request->request->get('client_id');
 	$auditor_id = $request->request->get('auditor_id');
-	$f_inicio = $request->request->get('f_inicio');
-	$f_inicia_audit = $request->request->get('f_inicia_audit');
+	$f_inicio_audit = $request->request->get('f_inicio_audit');
+	$f_fin_audit = $request->request->get('f_fin_audit');
+	$ver_total = $request->request->get('ver_total');
 
 
 	// Saving the main data of the questionnaire
-	$sql = "INSERT INTO cuestionarios_respondidos (id_cuestionario,id_cliente,id_auditor,fecha_de_inicio,fecha_auditoria) VALUES (?, ?, ?, ?, ?)";
+	$sql = "INSERT INTO cuestionarios_respondidos (id_cuestionario,id_cliente,id_auditor,fecha_inicia_auditoria,fecha_termina_auditoria,resultado_total) VALUES (?, ?, ?, ?, ?, ?)";
 			
+
+
 		$stmt = $app['db']->prepare($sql);
 		$stmt->bindValue(1, $questionnaire_id);
 		$stmt->bindValue(2, $client_id);
 		$stmt->bindValue(3, $auditor_id);
-		$stmt->bindValue(4, $f_inicio);
-		$stmt->bindValue(5, $f_inicia_audit);
+		$stmt->bindValue(4, $f_inicio_audit);
+		$stmt->bindValue(5, $f_fin_audit);
+		$stmt->bindValue(6, $ver_total);
+		
 
 		$insert = $stmt->execute();
 
