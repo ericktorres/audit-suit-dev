@@ -66,48 +66,60 @@ var manageCharts = function(){
 	if(plant == 0 && section == 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 == 0){
 		// Getting all plants by questionnaire
 		graphingAllPlants();
+		console.log('graphingAllPlants');
 	}else if(plant > 0 && section == 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 == 0){
 		// Getting one plant by questionnaire
 		graphingOnePlant();
+		console.log('graphingOnePlant');
 	}else if(plant == 0 && section > 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 == 0){
 		// Getting all plants by section
 		graphingAllPlantsBySection();
+		console.log('graphingAllPlantsBySection');
 	}
 	else if(plant > 0 && section > 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 == 0){
 		// Getting one plant by section
 		graphingOnePlantBySection();
+		console.log('graphingOnePlantBySection');
 	}
 	else if(plant == 0 && section > 0 && question > 0 && questionnaire > 0 && year1 > 0 && year2 == 0){
 		// Getting all plants by question
 		graphingAllPlantsByQuestion();
+		console.log('graphingAllPlantsByQuestion');
 	}
 	else if(plant > 0 && section > 0 && question > 0 && questionnaire > 0 && year1 > 0 && year2 == 0){
 		// Graphing one plant by question
 		graphingOnePlantByQuestion();
+		console.log('graphingOnePlantByQuestion');
 	}
 	else if(plant == 0 && section == 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 > 0){
 		// Getting all plants by questionnaire in comparative mode
 		graphingAllPlantsComparative();
+		console.log('graphingAllPlantsComparative');
 	}
 	else if(plant > 0 && section == 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 > 0){
 		// Getting one plant by questionnaire in comparative mode
 		graphingOnePlantComparative();
+		console.log('graphingOnePlantComparative');
 	}
 	else if(plant == 0 && section > 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 > 0){
 		// Getting all plants by section in comparative mode
 		graphingAllPlantsBySectionComparative();
+		console.log('graphingAllPlantsBySectionComparative');
 	}
 	else if(plant > 0 && section > 0 && question == 0 && questionnaire > 0 && year1 > 0 && year2 > 0){
 		// Getting one plant by section comparative
 		graphingOnePlantBySectionComparative();
+		console.log('graphingOnePlantBySectionComparative');
 	}
 	else if(plant == 0 && section > 0 && question > 0 && questionnaire > 0 && year1 > 0 && year2 > 0){
 		// Getting all plants by question in comparative mode
 		graphingAllPlantsByQuestionComparative();
+		console.log('graphingAllPlantsByQuestionComparative');
 	}
 	else if(plant > 0 && section > 0 && question > 0 && questionnaire > 0 && year1 > 0 && year2 > 0){
 		// Graphing one plant by question in comparative mode
 		graphingOnePlantByQuestionComparative();
+		console.log('graphingOnePlantByQuestionComparative');
 	}
 	else{
 		alert('No hay información para los parámetros de búsqueda ingresados.');
@@ -219,6 +231,8 @@ var graphingAllPlants = function(){
 	});
 
 	var params = '{"questionnaire_id": '+questionnaire_id+', "year": '+year+', "plants_id": '+JSON.stringify(plants_id)+'}';
+
+	console.log(params);
 	
 	var chart_data = [];
 	chart_data.push(['Planta', 'Puntaje', { 'role': 'annotation' }]);
