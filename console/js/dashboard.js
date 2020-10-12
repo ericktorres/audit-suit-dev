@@ -171,7 +171,7 @@ var graphingOnePlant = function(){
 
 				// Set chart options
 				var options = {
-					'title':'GEPP-PLANTAS-VER2017-01',
+					'title':'PROMETEO MARCA',
 					'width':1200,
 					'height':750,
 					'orientation':'horizontal',
