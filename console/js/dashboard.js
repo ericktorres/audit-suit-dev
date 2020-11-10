@@ -277,7 +277,7 @@ var graphingAllPlants = function(){
 
 			// Set chart options
 			var options = {
-				'title':$('#slc_questionnaire').text(),
+				'title': $('#slc_questionnaire').text(),
 				'width':1100,
 				'height':750,
 				'orientation':'horizontal',
@@ -778,7 +778,7 @@ var graphingAllPlantsComparative = function(){
 			var options = {
 				width: 1000,
 				height: 1200,
-				title: 'GEPP-PLANTAS-VER2017-01',
+				title: $('#slc_questionnaire').text(),
 				subtitle: 'Comparativo de auditorías',
 				bars: 'horizontal', // Required for Material Bar Charts.
 				bar: {groupWidth: "95%"},
