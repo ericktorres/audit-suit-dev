@@ -277,7 +277,7 @@ var graphingAllPlants = function(){
 
 			// Set chart options
 			var options = {
-				'title':'GEPP-PLANTAS-VER2017-01',
+				'title':$('#slc_questionnaire').text(),
 				'width':1100,
 				'height':750,
 				'orientation':'horizontal',
