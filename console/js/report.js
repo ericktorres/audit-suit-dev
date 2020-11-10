@@ -294,24 +294,17 @@ var getReportQuestions = function(){
 			var class_row = '';
 
 			for(var i=0; i<response.length; i++){
-				//question = response[i];
-			
-				//console.log(response[i]);
-				if(i % 2 == 0){
-					class_row = ' class="table-active"';
-				}else{
-					class_row = '';
-				}
-
 				
 				html += '<tr><td colspan="5" style="text-align:center;"><b>SECCIÓN '+ response[i].seccion_id + ' ' + response[i].seccion_name+'</b></td></tr>';
 
-				
-				//console.log(response[i].objeto.length);
 				for (var j = 0; j < response[i].objeto.length; j++) {
-					//Things[i]
-					//console.log(response[i].objeto[j]['question']);
-					html += '<tr>';
+					if(j % 2 == 0){
+						class_row = ' class="table-active"';
+					}else{
+						class_row = '';
+					}
+					
+					html += '<tr'+class_row+'>';
 					html += '<td><b>PREGUNTA ' + response[i].objeto[j]['id_section'] + '.' +response[i].objeto[j]['num_pregunta']+ '</b></td>';
 					html += '<td>'+response[i].objeto[j]['question']+'</td>';
 					html += '<td>'+response[i].objeto[j]['selected_option']+'</td>';
@@ -348,25 +341,17 @@ var getReportQuestions = function(){
 					html += '<td class="print-hide"></td>';
 					html += '</tr>';
 
+					if(j == 2){
+						html += '<tr'+class_row+'>';
+						html += '<td colspan="5" text-align="center"><img src="https://cdn.forbes.com.mx/2015/02/Grupo-Posadas-e1593120598600.jpg" width="100%"></td>';
+						html += '</tr>';
+					}else if(j == 3){
+						html += '<tr'+class_row+'>';
+						html += '<td colspan="5" text-align="center"><img src="https://realestatemarket.com.mx/images/2020/03-Marzo/2403/grupo_posadas_p.jpg" width="100%"></td>';
+						html += '</tr>';
+					}
+
 				}
-
-				/*html += '<tr'+class_row+'>';
-				html += '<td><b>AYUDA</b></td>';
-				html += '<td colspan="3">'+question.help_text+'</td>';
-				html += '<td class="print-hide"></td>';
-				html += '</tr>';
-
-				html += '<tr'+class_row+'>';
-				html += '<td><b>OBSERVACIONES</b></td>';
-				html += '<td colspan="3">'+question.observations+'</td>';
-				html += '<td class="print-hide"></td>';
-				html += '</tr>';
-
-				html += '<tr'+class_row+'>';
-				html += '<td><b>NO CONFORMIDAD</b></td>';
-				html += '<td colspan="3">'+question.nonconformity+'</td>';
-				html += '<td class="print-hide"></td>';
-				html += '</tr>';*/
 
 			}
 
